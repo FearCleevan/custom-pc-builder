@@ -35,6 +35,7 @@ export default function RootLayout() {
 
     const inAuthGroup = segments[0] === '(auth)';
     const inTabGroup = segments[0] === '(tabs)';
+    const inModalsGroup = segments[0] === '(modals)';
 
     if (!isAuthenticated && !inAuthGroup) {
       router.replace('/(auth)/login');
@@ -51,11 +52,18 @@ export default function RootLayout() {
 
   return (
     <>
-      <StatusBar style="auto" />
+      <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="product-detail" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="(modals)" options={{ headerShown: false }} />
+        <Stack.Screen 
+          name="product-detail" 
+          options={{ 
+            presentation: 'modal',
+            headerShown: false 
+          }} 
+        />
       </Stack>
     </>
   );

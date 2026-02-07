@@ -117,20 +117,32 @@ export default function HomeScreen() {
     router.push('/(tabs)/build');
   };
 
-  const handleQuickStart = (categoryId) => {
-    // For now, just navigate to build with a parameter
+  const handleQuickStart = (categoryId: string) => {
     router.push({
-      pathname: '/(tabs)/build',
-      params: { preset: categoryId }
+      pathname: '/(modals)/series-details',
+      params: {
+        seriesId: categoryId,
+        mode: 'quick-start'
+      }
     });
   };
 
   const handleCustomBuild = () => {
-    router.push('/(tabs)/build');
+    router.push('/(tabs)/build?mode=custom');
   };
 
   const handleBrowseAll = () => {
-    router.push('/(tabs)/explore');
+    router.push('/(tabs)/explore?view=all&category=all');
+  };
+
+  const handleIndustrialSolutions = () => {
+    router.push({
+      pathname: '/(modals)/series-details',
+      params: {
+        seriesId: 'industrial',
+        mode: 'industrial'
+      }
+    });
   };
 
   const bannerAnimatedStyle = useAnimatedStyle(() => {
@@ -353,7 +365,7 @@ export default function HomeScreen() {
                   <Text style={styles.specText}>24/7 Reliability</Text>
                 </View>
               </View>
-              <TouchableOpacity style={styles.industrialButton}>
+              <TouchableOpacity style={styles.industrialButton} onPress={handleIndustrialSolutions}>
                 <Text style={styles.industrialButtonText}>
                   EXPLORE INDUSTRIAL SOLUTIONS
                 </Text>
@@ -793,6 +805,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
     marginBottom: spacing.xxl,
     paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xxl,
   },
   footerGradient: {
     borderRadius: 20,

@@ -1,164 +1,381 @@
-import { CompareModal } from '@/components/CompareModal';
-import { FilterBar } from '@/components/FilterBar';
-import { ProductCard } from '@/components/ProductCard';
-import { cpuCoolerData } from '@/data/cooler';
-import { cpuData } from '@/data/cpu';
-import { gpuData } from '@/data/gpu';
-import { motherboardData } from '@/data/motherboard';
-import { ramData } from '@/data/ram';
-import { FilterOptions, filterProducts } from '@/logic/filtering';
-import { useCompareStore } from '@/store/useCompareStore';
-import { colors, spacing } from '@/theme';
-import { Product } from '@/types/product';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
 import {
+  allComponents,
+  componentCategories,
+  ComponentItem,
+  getComponentsByType
+} from '@/data/mockData';
+import { useBuildStore } from '@/store/useBuildStore';
+import { useCompareStore } from '@/store/useCompareStore';
+import { spacing } from '@/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import {
+  Dimensions,
+  FlatList,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 
-const PRODUCT_DATA: Record<string, Product[]> = {
-  cpu: cpuData,
-  gpu: gpuData,
-  motherboard: motherboardData,
-  ram: ramData,
-  cooler: cpuCoolerData,
-};
-
-const TYPE_LABELS: Record<string, string> = {
-  cpu: 'Processors (CPU)',
-  gpu: 'Graphics Cards (GPU)',
-  motherboard: 'Motherboards',
-  ram: 'Memory (RAM)',
-  cooler: 'CPU Coolers',
-  all: 'All Products',
-};
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH = (SCREEN_WIDTH - spacing.lg * 3) / 2;
 
 export default function ExploreScreen() {
-  const params = useLocalSearchParams<{ type?: string; preSelectedId?: string }>();
   const router = useRouter();
-  const [selectedType, setSelectedType] = useState(params.type || 'all');
-  const [filters, setFilters] = useState<FilterOptions>({});
-  const [showCompareModal, setShowCompareModal] = useState(false);
-  const compareProducts = useCompareStore((state) => state.products);
-  const clearProducts = useCompareStore((state) => state.clearProducts);
+  const params = useLocalSearchParams();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState(params.category || 'all');
+  const [showFilters, setShowFilters] = useState(false);
+  const [priceRange, setPriceRange] = useState([0, 100000]);
+  const [sortBy, setSortBy] = useState('name');
+  const [inStockOnly, setInStockOnly] = useState(false);
+  
+  const addPart = useBuildStore((state) => state.addPart);
+  const addToCompare = useCompareStore((state) => state.addProduct);
 
-  // Get products based on selected type
-  const getProducts = () => {
-    if (selectedType === 'all') {
-      return Object.values(PRODUCT_DATA).flat();
+  // Get components based on selected category
+  const getFilteredComponents = () => {
+    let components = selectedCategory === 'all' 
+      ? allComponents 
+      : getComponentsByType(selectedCategory);
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      components = components.filter(component =>
+        component.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        component.type.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
-    return PRODUCT_DATA[selectedType] || [];
+
+    // Apply stock filter
+    if (inStockOnly) {
+      components = components.filter(component => component.stock === 'In stock');
+    }
+
+    // Apply price filter
+    components = components.filter(component =>
+      component.price >= priceRange[0] && component.price <= priceRange[1]
+    );
+
+    // Apply sorting
+    return [...components].sort((a, b) => {
+      switch (sortBy) {
+        case 'price-low':
+          return a.price - b.price;
+        case 'price-high':
+          return b.price - a.price;
+        case 'name':
+          return a.name.localeCompare(b.name);
+        default:
+          return 0;
+      }
+    });
   };
 
-  const products = getProducts();
-  const filteredProducts = filterProducts(products, filters);
+  const filteredComponents = getFilteredComponents();
 
-  const productTypes = [
-    { id: 'all', label: 'All' },
-    { id: 'cpu', label: 'CPU' },
-    { id: 'gpu', label: 'GPU' },
-    { id: 'motherboard', label: 'MB' },
-    { id: 'ram', label: 'RAM' },
-    { id: 'cooler', label: 'Cooler' },
-  ];
-
-  useEffect(() => {
-    if (params.preSelectedId) {
-      // Scroll to pre-selected product (in a real app, you'd implement scroll logic)
-      console.log('Pre-selected product ID:', params.preSelectedId);
-    }
-  }, [params.preSelectedId]);
-
-  const handleProductPress = (product: Product) => {
+  const handleComponentPress = (component: ComponentItem) => {
     router.push({
-      pathname: '/product-detail',
-      params: { id: product.id, type: product.type },
+      pathname: '/(modals)/component-details',
+      params: {
+        id: component.id,
+        type: component.type,
+        from: 'explore'
+      }
     });
+  };
+
+  const handleAddToBuild = (component: ComponentItem) => {
+    addPart(component);
+    Alert.alert(
+      'Added to Build',
+      `${component.name} has been added to your build.`,
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleAddToCompare = (component: ComponentItem) => {
+    addToCompare(component);
+    Alert.alert(
+      'Added to Compare',
+      `${component.name} has been added to compare.`,
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleQuickAdd = (component: ComponentItem) => {
+    addPart(component);
   };
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{TYPE_LABELS[selectedType]}</Text>
-        {compareProducts.length > 0 && (
-          <TouchableOpacity 
-            style={styles.compareBadge}
-            onPress={() => setShowCompareModal(true)}
-          >
-            <Text style={styles.compareBadgeText}>
-              Compare ({compareProducts.length})
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      {/* Header */}
+      <LinearGradient
+        colors={['#0a0a0f', '#1a1a2e']}
+        style={styles.header}
+      >
+        <View style={styles.headerContent}>
+          <Text style={styles.title}>Browse Components</Text>
+          <Text style={styles.subtitle}>
+            {selectedCategory === 'all' 
+              ? 'All Products' 
+              : componentCategories.find(c => c.id === selectedCategory)?.name}
+          </Text>
+        </View>
 
-      <FilterBar 
-        onFilterChange={setFilters}
-        productType={selectedType !== 'all' ? selectedType : undefined}
-      />
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#666" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search components..."
+            placeholderTextColor="#666"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+      </LinearGradient>
 
-      {/* Product Type Tabs */}
+      {/* Category Tabs */}
       <ScrollView 
         horizontal 
         showsHorizontalScrollIndicator={false}
-        style={styles.typeTabsContainer}
-        contentContainerStyle={styles.typeTabsContent}
+        style={styles.categoryTabs}
+        contentContainerStyle={styles.categoryTabsContent}
       >
-        {productTypes.map((type) => (
+        <TouchableOpacity
+          style={[
+            styles.categoryTab,
+            selectedCategory === 'all' && styles.categoryTabActive
+          ]}
+          onPress={() => setSelectedCategory('all')}
+        >
+          <Text style={[
+            styles.categoryTabText,
+            selectedCategory === 'all' && styles.categoryTabTextActive
+          ]}>
+            All
+          </Text>
+        </TouchableOpacity>
+
+        {componentCategories.map(category => (
           <TouchableOpacity
-            key={type.id}
+            key={category.id}
             style={[
-              styles.typeTab,
-              selectedType === type.id && styles.typeTabActive,
+              styles.categoryTab,
+              selectedCategory === category.id && styles.categoryTabActive
             ]}
-            onPress={() => setSelectedType(type.id)}
+            onPress={() => setSelectedCategory(category.id)}
           >
+            <Ionicons
+              name={category.icon as any}
+              size={16}
+              color={selectedCategory === category.id ? '#FF00FF' : '#666'}
+              style={styles.categoryIcon}
+            />
             <Text style={[
-              styles.typeTabText,
-              selectedType === type.id && styles.typeTabTextActive,
+              styles.categoryTabText,
+              selectedCategory === category.id && styles.categoryTabTextActive
             ]}>
-              {type.label}
+              {category.name}
             </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
-      {/* Products List */}
-      <ScrollView 
-        style={styles.productsContainer}
-        contentContainerStyle={styles.productsContent}
-      >
-        {filteredProducts.length === 0 ? (
+      {/* Filter Bar */}
+      <View style={styles.filterBar}>
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => setShowFilters(true)}
+        >
+          <Ionicons name="filter" size={20} color="#FF00FF" />
+          <Text style={styles.filterButtonText}>Filters</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.sortButton}
+          onPress={() => {
+            // Show sort options modal
+            Alert.alert(
+              'Sort By',
+              '',
+              [
+                { text: 'Name', onPress: () => setSortBy('name') },
+                { text: 'Price: Low to High', onPress: () => setSortBy('price-low') },
+                { text: 'Price: High to Low', onPress: () => setSortBy('price-high') },
+                { text: 'Cancel', style: 'cancel' }
+              ]
+            );
+          }}
+        >
+          <Text style={styles.sortButtonText}>
+            Sort: {sortBy === 'price-low' ? 'Price ↑' : 
+                  sortBy === 'price-high' ? 'Price ↓' : 'Name'}
+          </Text>
+          <Ionicons name="chevron-down" size={16} color="#666" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Components Grid */}
+      <FlatList
+        data={filteredComponents}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        contentContainerStyle={styles.grid}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.componentCard}
+            onPress={() => handleComponentPress(item)}
+          >
+            <LinearGradient
+              colors={['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)']}
+              style={styles.cardGradient}
+            >
+              {/* Stock Badge */}
+              <View style={styles.stockBadge}>
+                <View style={[
+                  styles.stockDot,
+                  { backgroundColor: item.stock === 'In stock' ? '#00FF00' : '#FF0000' }
+                ]} />
+                <Text style={styles.stockText}>{item.stock}</Text>
+              </View>
+
+              {/* Component Type */}
+              <Text style={styles.componentType}>
+                {item.type.toUpperCase()}
+              </Text>
+
+              {/* Component Name */}
+              <Text style={styles.componentName} numberOfLines={2}>
+                {item.name}
+              </Text>
+
+              {/* Component Price */}
+              <Text style={styles.componentPrice}>
+                ₱{item.price.toLocaleString()}
+              </Text>
+
+              {/* Action Buttons */}
+              <View style={styles.actionButtons}>
+                <TouchableOpacity
+                  style={styles.compareButton}
+                  onPress={() => handleAddToCompare(item)}
+                >
+                  <Ionicons name="git-compare" size={16} color="#00FFFF" />
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.addButton}
+                  onPress={() => handleAddToBuild(item)}
+                >
+                  <Ionicons name="add-circle" size={18} color="#FF00FF" />
+                  <Text style={styles.addButtonText}>Add to Build</Text>
+                </TouchableOpacity>
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+        )}
+        ListEmptyComponent={
           <View style={styles.emptyState}>
+            <Ionicons name="search-outline" size={64} color="#666" />
             <Text style={styles.emptyStateText}>
-              No products found matching your criteria.
+              No components found matching your criteria.
             </Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.resetButton}
-              onPress={() => setFilters({})}
+              onPress={() => {
+                setSearchQuery('');
+                setSelectedCategory('all');
+                setPriceRange([0, 100000]);
+                setSortBy('name');
+                setInStockOnly(false);
+              }}
             >
               <Text style={styles.resetButtonText}>Reset Filters</Text>
             </TouchableOpacity>
           </View>
-        ) : (
-          filteredProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onPress={() => handleProductPress(product)}
-            />
-          ))
-        )}
-      </ScrollView>
-
-      <CompareModal
-        visible={showCompareModal}
-        onClose={() => setShowCompareModal(false)}
+        }
       />
+
+      {/* Filters Modal */}
+      <Modal
+        visible={showFilters}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowFilters(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <LinearGradient
+              colors={['#0a0a0f', '#1a1a2e']}
+              style={styles.modalHeader}
+            >
+              <Text style={styles.modalTitle}>Filters</Text>
+              <TouchableOpacity onPress={() => setShowFilters(false)}>
+                <Ionicons name="close" size={24} color="#FFF" />
+              </TouchableOpacity>
+            </LinearGradient>
+
+            <ScrollView style={styles.filterContent}>
+              {/* Price Range Filter */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>Price Range</Text>
+                <Text style={styles.priceRangeText}>
+                  ₱{priceRange[0].toLocaleString()} - ₱{priceRange[1].toLocaleString()}
+                </Text>
+                {/* Add Slider Component here */}
+              </View>
+
+              {/* Stock Filter */}
+              <View style={styles.filterSection}>
+                <Text style={styles.filterSectionTitle}>Availability</Text>
+                <TouchableOpacity
+                  style={styles.checkboxRow}
+                  onPress={() => setInStockOnly(!inStockOnly)}
+                >
+                  <View style={[
+                    styles.checkbox,
+                    inStockOnly && styles.checkboxChecked
+                  ]}>
+                    {inStockOnly && (
+                      <Ionicons name="checkmark" size={16} color="#FFF" />
+                    )}
+                  </View>
+                  <Text style={styles.checkboxLabel}>In Stock Only</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Reset Button */}
+              <TouchableOpacity
+                style={styles.modalResetButton}
+                onPress={() => {
+                  setPriceRange([0, 100000]);
+                  setInStockOnly(false);
+                }}
+              >
+                <Text style={styles.modalResetButtonText}>Reset All Filters</Text>
+              </TouchableOpacity>
+            </ScrollView>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.applyButton}
+                onPress={() => setShowFilters(false)}
+              >
+                <Text style={styles.applyButtonText}>Apply Filters</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -166,84 +383,300 @@ export default function ExploreScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#0a0a0f',
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: spacing.lg,
-    paddingTop: spacing.xl,
-    backgroundColor: colors.primary,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    paddingTop: 60,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.lg,
+  },
+  headerContent: {
+    marginBottom: spacing.md,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.textLight,
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#FFF',
+    marginBottom: 4,
   },
-  compareBadge: {
-    backgroundColor: colors.textLight + '20',
+  subtitle: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.6)',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: 20,
   },
-  compareBadgeText: {
-    color: colors.textLight,
-    fontWeight: '600',
+  searchInput: {
+    flex: 1,
+    color: '#FFF',
+    fontSize: 16,
+    marginLeft: spacing.sm,
+    paddingVertical: spacing.xs,
   },
-  typeTabsContainer: {
-    backgroundColor: colors.background,
+  categoryTabs: {
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
   },
-  typeTabsContent: {
+  categoryTabsContent: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     gap: spacing.sm,
   },
-  typeTab: {
+  categoryTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: 20,
-    backgroundColor: colors.cardBackground,
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: 'rgba(255,255,255,0.1)',
+    marginRight: spacing.sm,
   },
-  typeTabActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+  categoryTabActive: {
+    backgroundColor: 'rgba(255, 0, 255, 0.1)',
+    borderColor: '#FF00FF',
   },
-  typeTabText: {
-    color: colors.textSecondary,
+  categoryIcon: {
+    marginRight: spacing.xs,
+  },
+  categoryTabText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.7)',
+  },
+  categoryTabTextActive: {
+    color: '#FF00FF',
+  },
+  filterBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  filterButtonText: {
+    color: '#FF00FF',
+    fontSize: 14,
     fontWeight: '600',
   },
-  typeTabTextActive: {
-    color: colors.textLight,
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
-  productsContainer: {
+  sortButtonText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 14,
+  },
+  grid: {
+    padding: spacing.lg,
+  },
+  componentCard: {
+    width: CARD_WIDTH,
+    marginRight: spacing.lg,
+    marginBottom: spacing.lg,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  cardGradient: {
+    padding: spacing.md,
+    height: 200,
+    justifyContent: 'space-between',
+  },
+  stockBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginBottom: spacing.sm,
+  },
+  stockDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 4,
+  },
+  stockText: {
+    fontSize: 10,
+    color: '#FFF',
+    fontWeight: '600',
+  },
+  componentType: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.5)',
+    fontWeight: '600',
+    letterSpacing: 1,
+    marginBottom: spacing.xs,
+  },
+  componentName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFF',
+    lineHeight: 18,
+    marginBottom: spacing.sm,
     flex: 1,
   },
-  productsContent: {
-    padding: spacing.lg,
+  componentPrice: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FF00FF',
+    marginBottom: spacing.sm,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  compareButton: {
+    padding: spacing.xs,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 0, 255, 0.1)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 4,
+  },
+  addButtonText: {
+    fontSize: 10,
+    color: '#FF00FF',
+    fontWeight: '600',
   },
   emptyState: {
     alignItems: 'center',
-    padding: spacing.xl,
+    justifyContent: 'center',
+    paddingVertical: spacing.xxl,
   },
   emptyStateText: {
     fontSize: 16,
-    color: colors.textSecondary,
+    color: 'rgba(255,255,255,0.6)',
     textAlign: 'center',
+    marginTop: spacing.md,
     marginBottom: spacing.lg,
   },
   resetButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: 'rgba(255, 0, 255, 0.1)',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
-    borderRadius: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 255, 0.3)',
   },
   resetButtonText: {
-    color: colors.textLight,
+    color: '#FF00FF',
+    fontSize: 14,
     fontWeight: '600',
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#0a0a0f',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  filterContent: {
+    padding: spacing.lg,
+  },
+  filterSection: {
+    marginBottom: spacing.xl,
+  },
+  filterSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFF',
+    marginBottom: spacing.md,
+  },
+  priceRangeText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FF00FF',
+    marginBottom: spacing.md,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#FF00FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  checkboxChecked: {
+    backgroundColor: '#FF00FF',
+  },
+  checkboxLabel: {
+    fontSize: 16,
+    color: '#FFF',
+  },
+  modalResetButton: {
+    padding: spacing.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 255, 0.3)',
+    borderRadius: 12,
+    marginTop: spacing.lg,
+  },
+  modalResetButtonText: {
+    color: '#FF00FF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalActions: {
+    padding: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.1)',
+  },
+  applyButton: {
+    backgroundColor: '#FF00FF',
+    padding: spacing.lg,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  applyButtonText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: '700',
   },
 });

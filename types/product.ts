@@ -10,7 +10,23 @@ export interface Product {
   stock?: string;
 }
 
-export type ProductType = 'cpu' | 'gpu' | 'motherboard' | 'ram' | 'cooler' | 'storage' | 'psu' | 'case';
+export type ProductType = 
+  | 'cpu' 
+  | 'gpu' 
+  | 'motherboard' 
+  | 'ram' 
+  | 'cooler' 
+  | 'storage' 
+  | 'psu' 
+  | 'case'
+  | 'monitor'
+  | 'keyboard'
+  | 'mouse'
+  | 'headphones'
+  | 'microphone'
+  | 'speakers'
+  | 'webcam'
+  | 'fan';
 
 export interface BuildSlot {
   type: ProductType;
