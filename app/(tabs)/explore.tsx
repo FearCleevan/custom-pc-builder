@@ -1,112 +1,249 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { CompareModal } from '@/components/CompareModal';
+import { FilterBar } from '@/components/FilterBar';
+import { ProductCard } from '@/components/ProductCard';
+import { cpuCoolerData } from '@/data/cooler';
+import { cpuData } from '@/data/cpu';
+import { gpuData } from '@/data/gpu';
+import { motherboardData } from '@/data/motherboard';
+import { ramData } from '@/data/ram';
+import { FilterOptions, filterProducts } from '@/logic/filtering';
+import { useCompareStore } from '@/store/useCompareStore';
+import { colors, spacing } from '@/theme';
+import { Product } from '@/types/product';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
-import { Collapsible } from '@/components/ui/collapsible';
-import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
+const PRODUCT_DATA: Record<string, Product[]> = {
+  cpu: cpuData,
+  gpu: gpuData,
+  motherboard: motherboardData,
+  ram: ramData,
+  cooler: cpuCoolerData,
+};
 
-export default function TabTwoScreen() {
+const TYPE_LABELS: Record<string, string> = {
+  cpu: 'Processors (CPU)',
+  gpu: 'Graphics Cards (GPU)',
+  motherboard: 'Motherboards',
+  ram: 'Memory (RAM)',
+  cooler: 'CPU Coolers',
+  all: 'All Products',
+};
+
+export default function ExploreScreen() {
+  const params = useLocalSearchParams<{ type?: string; preSelectedId?: string }>();
+  const router = useRouter();
+  const [selectedType, setSelectedType] = useState(params.type || 'all');
+  const [filters, setFilters] = useState<FilterOptions>({});
+  const [showCompareModal, setShowCompareModal] = useState(false);
+  const compareProducts = useCompareStore((state) => state.products);
+  const clearProducts = useCompareStore((state) => state.clearProducts);
+
+  // Get products based on selected type
+  const getProducts = () => {
+    if (selectedType === 'all') {
+      return Object.values(PRODUCT_DATA).flat();
+    }
+    return PRODUCT_DATA[selectedType] || [];
+  };
+
+  const products = getProducts();
+  const filteredProducts = filterProducts(products, filters);
+
+  const productTypes = [
+    { id: 'all', label: 'All' },
+    { id: 'cpu', label: 'CPU' },
+    { id: 'gpu', label: 'GPU' },
+    { id: 'motherboard', label: 'MB' },
+    { id: 'ram', label: 'RAM' },
+    { id: 'cooler', label: 'Cooler' },
+  ];
+
+  useEffect(() => {
+    if (params.preSelectedId) {
+      // Scroll to pre-selected product (in a real app, you'd implement scroll logic)
+      console.log('Pre-selected product ID:', params.preSelectedId);
+    }
+  }, [params.preSelectedId]);
+
+  const handleProductPress = (product: Product) => {
+    router.push({
+      pathname: '/product-detail',
+      params: { id: product.id, type: product.type },
+    });
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}>
-          Explore
-        </ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/react-logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>{TYPE_LABELS[selectedType]}</Text>
+        {compareProducts.length > 0 && (
+          <TouchableOpacity 
+            style={styles.compareBadge}
+            onPress={() => setShowCompareModal(true)}
+          >
+            <Text style={styles.compareBadgeText}>
+              Compare ({compareProducts.length})
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      <FilterBar 
+        onFilterChange={setFilters}
+        productType={selectedType !== 'all' ? selectedType : undefined}
+      />
+
+      {/* Product Type Tabs */}
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        style={styles.typeTabsContainer}
+        contentContainerStyle={styles.typeTabsContent}
+      >
+        {productTypes.map((type) => (
+          <TouchableOpacity
+            key={type.id}
+            style={[
+              styles.typeTab,
+              selectedType === type.id && styles.typeTabActive,
+            ]}
+            onPress={() => setSelectedType(type.id)}
+          >
+            <Text style={[
+              styles.typeTabText,
+              selectedType === type.id && styles.typeTabTextActive,
+            ]}>
+              {type.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      {/* Products List */}
+      <ScrollView 
+        style={styles.productsContainer}
+        contentContainerStyle={styles.productsContent}
+      >
+        {filteredProducts.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>
+              No products found matching your criteria.
+            </Text>
+            <TouchableOpacity 
+              style={styles.resetButton}
+              onPress={() => setFilters({})}
+            >
+              <Text style={styles.resetButtonText}>Reset Filters</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          filteredProducts.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              onPress={() => handleProductPress(product)}
+            />
+          ))
+        )}
+      </ScrollView>
+
+      <CompareModal
+        visible={showCompareModal}
+        onClose={() => setShowCompareModal(false)}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
-  titleContainer: {
+  header: {
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing.lg,
+    paddingTop: spacing.xl,
+    backgroundColor: colors.primary,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.textLight,
+  },
+  compareBadge: {
+    backgroundColor: colors.textLight + '20',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 20,
+  },
+  compareBadgeText: {
+    color: colors.textLight,
+    fontWeight: '600',
+  },
+  typeTabsContainer: {
+    backgroundColor: colors.background,
+  },
+  typeTabsContent: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    gap: spacing.sm,
+  },
+  typeTab: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: 20,
+    backgroundColor: colors.cardBackground,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  typeTabActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  typeTabText: {
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  typeTabTextActive: {
+    color: colors.textLight,
+  },
+  productsContainer: {
+    flex: 1,
+  },
+  productsContent: {
+    padding: spacing.lg,
+  },
+  emptyState: {
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  resetButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: 8,
+  },
+  resetButtonText: {
+    color: colors.textLight,
+    fontWeight: '600',
   },
 });
