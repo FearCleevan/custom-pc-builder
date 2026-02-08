@@ -9,8 +9,9 @@ import { spacing } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   Dimensions,
   FlatList,
   Modal,
@@ -22,10 +23,10 @@ import {
   View,
 } from 'react-native';
 
-// Toast Component
-
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - spacing.lg * 3) / 2;
+const HEADER_EXPANDED_HEIGHT = 120; // Reduced from 160
+const HEADER_COLLAPSED_HEIGHT = 80;
 
 // Toast Component
 const ToastNotification = ({ visible, message, type }: { visible: boolean, message: string, type: 'success' | 'error' }) => {
@@ -62,8 +63,36 @@ export default function ExploreScreen() {
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const flatListRef = useRef<FlatList>(null);
+
   const addToCompare = useCompareStore((state) => state.addProduct);
   const compareProducts = useCompareStore((state) => state.products);
+
+  // Handle scroll animation
+  const headerHeight = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [HEADER_EXPANDED_HEIGHT, HEADER_COLLAPSED_HEIGHT],
+    extrapolate: 'clamp',
+  });
+
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [0, 80, 100],
+    outputRange: [1, 0.5, 0],
+    extrapolate: 'clamp',
+  });
+
+  const titleScale = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [1, 0.8],
+    extrapolate: 'clamp',
+  });
+
+  const titleTranslateY = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [0, -10],
+    extrapolate: 'clamp',
+  });
 
   // Category-specific filter options
   const getCategoryFilters = () => {
@@ -254,6 +283,10 @@ export default function ExploreScreen() {
     setFilters({});
   };
 
+  const scrollToTop = () => {
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+  };
+
   // Reset filters when category changes
   useEffect(() => {
     setFilters({});
@@ -268,101 +301,207 @@ export default function ExploreScreen() {
         type={toastType} 
       />
 
-      {/* Header */}
-      <LinearGradient
-        colors={['#000000', '#1a1a2e']}
-        style={styles.header}
-      >
-        <View style={styles.headerContent}>
-          <Text style={styles.title}>Browse Components</Text>
-          <Text style={styles.subtitle}>
-            Explore and compare PC components
-          </Text>
-        </View>
-
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#666" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search components..."
-            placeholderTextColor="#666"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery ? (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={20} color="#666" />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      </LinearGradient>
-
-      {/* Category Tabs - Always Visible */}
-      <View style={styles.categorySection}>
-        <Text style={styles.sectionLabel}>CATEGORIES</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.categoryTabs}
-          contentContainerStyle={styles.categoryTabsContent}
+      {/* Animated Header */}
+      <Animated.View style={[styles.headerContainer, { height: headerHeight }]}>
+        <LinearGradient
+          colors={['#000000', '#1a1a2e']}
+          style={styles.headerGradient}
         >
-          <TouchableOpacity
+          {/* Compact Header (shown when scrolled) */}
+          <Animated.View 
             style={[
-              styles.categoryTab,
-              selectedCategory === 'all' && styles.categoryTabActive
+              styles.compactHeader,
+              { 
+                opacity: scrollY.interpolate({
+                  inputRange: [80, 100],
+                  outputRange: [0, 1],
+                  extrapolate: 'clamp',
+                }),
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: HEADER_COLLAPSED_HEIGHT,
+              }
             ]}
-            onPress={() => setSelectedCategory('all')}
           >
-            <Text style={[
-              styles.categoryTabText,
-              selectedCategory === 'all' && styles.categoryTabTextActive
-            ]}>
-              All
-            </Text>
-          </TouchableOpacity>
-
-          {componentCategories.map(category => (
-            <TouchableOpacity
-              key={category.id}
-              style={[
-                styles.categoryTab,
-                selectedCategory === category.id && styles.categoryTabActive
-              ]}
-              onPress={() => setSelectedCategory(category.id)}
+            <TouchableOpacity 
+              style={styles.menuButton}
+              onPress={() => setShowFilters(true)}
             >
-              <Ionicons
-                name={category.icon as any}
-                size={16}
-                color={selectedCategory === category.id ? '#FF00FF' : 'rgba(255,255,255,0.7)'}
-                style={styles.categoryIcon}
-              />
-              <Text style={[
-                styles.categoryTabText,
-                selectedCategory === category.id && styles.categoryTabTextActive
-              ]}>
-                {category.name}
-              </Text>
+              <Ionicons name="filter" size={22} color="#FF00FF" />
             </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+            
+            <Animated.View style={{ 
+              transform: [
+                { scale: titleScale },
+                { translateY: titleTranslateY }
+              ] 
+            }}>
+              <Text style={styles.compactTitle}>Browse</Text>
+            </Animated.View>
+            
+            <View style={styles.compactHeaderRight}>
+              <TouchableOpacity 
+                style={styles.compactSearchButton}
+                onPress={scrollToTop}
+              >
+                <Ionicons name="search" size={20} color="#00FFFF" />
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.compareButton}
+                onPress={() => {
+                  if (compareProducts.length > 0) {
+                    router.push('/compare');
+                  } else {
+                    showToastNotification('Add some components to compare first.', 'error');
+                  }
+                }}
+              >
+                <Ionicons name="git-compare" size={20} color="#00FFFF" />
+                {compareProducts.length > 0 && (
+                  <View style={styles.compareBadge}>
+                    <Text style={styles.compareBadgeText}>{compareProducts.length}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
 
-      {/* Filter Bar */}
-      <View style={styles.filterBar}>
+          {/* Expanded Header Content - Only shows when not scrolled */}
+          <Animated.View 
+            style={[
+              styles.expandedHeader,
+              { 
+                opacity: headerOpacity,
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: HEADER_EXPANDED_HEIGHT,
+              }
+            ]}
+          >
+            {/* Title and Subtitle */}
+            <View style={styles.headerContent}>
+              <Text style={styles.title}>Browse Components</Text>
+              <Text style={styles.subtitle}>
+                Explore and compare PC components
+              </Text>
+            </View>
+
+            {/* Search Bar */}
+            <View style={styles.searchContainer}>
+              <Ionicons name="search" size={18} color="#666" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search components..."
+                placeholderTextColor="#666"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+              {searchQuery ? (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Ionicons name="close-circle" size={18} color="#666" />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </Animated.View>
+
+          {/* Category Tabs - Positioned at bottom of header */}
+          <View style={[
+            styles.categorySection,
+            { 
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: 'transparent',
+            }
+          ]}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.categoryTabs}
+              contentContainerStyle={styles.categoryTabsContent}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.categoryTab,
+                  selectedCategory === 'all' && styles.categoryTabActive
+                ]}
+                onPress={() => setSelectedCategory('all')}
+              >
+                <Text style={[
+                  styles.categoryTabText,
+                  selectedCategory === 'all' && styles.categoryTabTextActive
+                ]}>
+                  All
+                </Text>
+              </TouchableOpacity>
+
+              {componentCategories.map(category => (
+                <TouchableOpacity
+                  key={category.id}
+                  style={[
+                    styles.categoryTab,
+                    selectedCategory === category.id && styles.categoryTabActive
+                  ]}
+                  onPress={() => setSelectedCategory(category.id)}
+                >
+                  <Ionicons
+                    name={category.icon as any}
+                    size={14}
+                    color={selectedCategory === category.id ? '#FF00FF' : 'rgba(255,255,255,0.7)'}
+                    style={styles.categoryIcon}
+                  />
+                  <Text style={[
+                    styles.categoryTabText,
+                    selectedCategory === category.id && styles.categoryTabTextActive
+                  ]}>
+                    {category.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </LinearGradient>
+      </Animated.View>
+
+      {/* Filter Bar - Hidden, replaced by menu button in compact header */}
+      <Animated.View 
+        style={[
+          styles.filterBar,
+          { 
+            opacity: scrollY.interpolate({
+              inputRange: [0, 50],
+              outputRange: [1, 0],
+              extrapolate: 'clamp',
+            }),
+            transform: [{
+              translateY: scrollY.interpolate({
+                inputRange: [0, 50],
+                outputRange: [0, -20],
+                extrapolate: 'clamp',
+              })
+            }]
+          }
+        ]}
+      >
         <View style={styles.filterLeft}>
           <TouchableOpacity
             style={styles.filterButton}
             onPress={() => setShowFilters(true)}
           >
-            <Ionicons name="filter" size={20} color="#FF00FF" />
+            <Ionicons name="filter" size={18} color="#FF00FF" />
             <Text style={styles.filterButtonText}>Filters</Text>
           </TouchableOpacity>
 
           {Object.keys(filters).length > 0 && (
             <View style={styles.activeFiltersBadge}>
               <Text style={styles.activeFiltersText}>
-                {Object.keys(filters).length} active
+                {Object.keys(filters).length}
               </Text>
             </View>
           )}
@@ -370,34 +509,14 @@ export default function ExploreScreen() {
 
         <View style={styles.filterRight}>
           <TouchableOpacity
-            style={styles.compareButton}
-            onPress={() => {
-              if (compareProducts.length > 0) {
-                router.push('/compare');
-              } else {
-                showToastNotification('Add some components to compare first.', 'error');
-              }
-            }}
-          >
-            <Ionicons name="git-compare" size={20} color="#00FFFF" />
-            {compareProducts.length > 0 && (
-              <View style={styles.compareBadge}>
-                <Text style={styles.compareBadgeText}>{compareProducts.length}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
             style={styles.sortButton}
             onPress={() => {
-              // Simplified sort alert - you might want to create a proper modal for this
               const sortOptions = [
                 { text: 'Name (A-Z)', value: 'name' },
                 { text: 'Price: Low to High', value: 'price-low' },
                 { text: 'Price: High to Low', value: 'price-high' },
               ];
               
-              // You can replace this with a custom modal
               setSortBy(prev => {
                 const currentIndex = sortOptions.findIndex(opt => opt.value === prev);
                 const nextIndex = (currentIndex + 1) % sortOptions.length;
@@ -409,28 +528,78 @@ export default function ExploreScreen() {
               {sortBy === 'price-low' ? 'Price ↑' :
                 sortBy === 'price-high' ? 'Price ↓' : 'Name'}
             </Text>
-            <Ionicons name="chevron-down" size={16} color="#666" />
+            <Ionicons name="chevron-down" size={14} color="#666" />
           </TouchableOpacity>
         </View>
-      </View>
+      </Animated.View>
 
       {/* Results Count */}
-      <View style={styles.resultsBar}>
+      <Animated.View 
+        style={[
+          styles.resultsBar,
+          { 
+            opacity: scrollY.interpolate({
+              inputRange: [0, 50],
+              outputRange: [1, 0],
+              extrapolate: 'clamp',
+            })
+          }
+        ]}
+      >
         <Text style={styles.resultsText}>
           {filteredComponents.length} {filteredComponents.length === 1 ? 'item' : 'items'} found
         </Text>
         <TouchableOpacity onPress={handleResetFilters}>
           <Text style={styles.resetLink}>Reset All</Text>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
+
+      {/* Scroll To Top Button */}
+      <Animated.View
+        style={[
+          styles.scrollToTopButton,
+          {
+            opacity: scrollY.interpolate({
+              inputRange: [100, 200],
+              outputRange: [0, 1],
+              extrapolate: 'clamp',
+            }),
+            transform: [{
+              translateY: scrollY.interpolate({
+                inputRange: [100, 200],
+                outputRange: [20, 0],
+                extrapolate: 'clamp',
+              })
+            }]
+          }
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.scrollToTopTouchable}
+          onPress={scrollToTop}
+        >
+          <LinearGradient
+            colors={['#FF00FF', '#9400D3']}
+            style={styles.scrollToTopGradient}
+          >
+            <Ionicons name="arrow-up" size={20} color="#FFF" />
+          </LinearGradient>
+        </TouchableOpacity>
+      </Animated.View>
 
       {/* Components Grid */}
       <FlatList
+        ref={flatListRef}
         data={filteredComponents}
         keyExtractor={(item) => item.id}
         numColumns={2}
         contentContainerStyle={styles.grid}
         showsVerticalScrollIndicator={false}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.componentCard}
@@ -489,15 +658,15 @@ export default function ExploreScreen() {
                   style={styles.compareIconButton}
                   onPress={() => handleAddToCompare(item)}
                 >
-                  <Ionicons name="git-compare" size={16} color="#00FFFF" />
+                  <Ionicons name="git-compare" size={14} color="#00FFFF" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.viewButton}
                   onPress={() => handleComponentPress(item)}
                 >
-                  <Text style={styles.viewButtonText}>VIEW DETAILS</Text>
-                  <Ionicons name="arrow-forward" size={12} color="#00FFFF" />
+                  <Text style={styles.viewButtonText}>VIEW</Text>
+                  <Ionicons name="arrow-forward" size={10} color="#00FFFF" />
                 </TouchableOpacity>
               </View>
             </LinearGradient>
@@ -657,9 +826,382 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0a0a0f',
   },
+  headerContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    overflow: 'hidden',
+  },
+  headerGradient: {
+    flex: 1,
+    paddingTop: 50,
+  },
+  compactHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+  },
+  menuButton: {
+    padding: spacing.xs,
+  },
+  compactTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#FFF',
+    textShadowColor: 'rgba(255, 0, 255, 0.3)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
+  },
+  compactHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  compactSearchButton: {
+    padding: spacing.xs,
+  },
+  expandedHeader: {
+    paddingHorizontal: spacing.lg,
+  },
+  // headerContent: {
+  //   marginBottom: spacing.sm,
+  // },
+  title: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#FFF',
+    marginBottom: 2,
+    textShadowColor: 'rgba(255, 0, 255, 0.3)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
+  },
+  subtitle: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.6)',
+    letterSpacing: 0.5,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    marginTop: spacing.xs,
+  },
+  searchInput: {
+    flex: 1,
+    color: '#FFF',
+    fontSize: 14,
+    marginLeft: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  categorySection: {
+    height: 40,
+    justifyContent: 'center',
+  },
+  categoryTabs: {
+    flexGrow: 0,
+  },
+  categoryTabsContent: {
+    paddingHorizontal: spacing.lg,
+    gap: spacing.xs,
+  },
+  categoryTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    marginRight: spacing.xs,
+  },
+  categoryTabActive: {
+    backgroundColor: 'rgba(255, 0, 255, 0.1)',
+    borderColor: '#FF00FF',
+  },
+  categoryIcon: {
+    marginRight: spacing.xs,
+  },
+  categoryTabText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.7)',
+  },
+  categoryTabTextActive: {
+    color: '#FF00FF',
+  },
+  filterBar: {
+    position: 'absolute',
+    top: HEADER_EXPANDED_HEIGHT,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    backgroundColor: 'rgba(10, 10, 15, 0.8)',
+    zIndex: 90,
+  },
+  filterLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  filterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  filterButtonText: {
+    color: '#FF00FF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  activeFiltersBadge: {
+    backgroundColor: 'rgba(255, 0, 255, 0.1)',
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    borderRadius: 8,
+    minWidth: 20,
+    alignItems: 'center',
+  },
+  activeFiltersText: {
+    fontSize: 9,
+    color: '#FF00FF',
+    fontWeight: '600',
+  },
+  filterRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  compareButton: {
+    position: 'relative',
+    padding: spacing.xs,
+  },
+  compareBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: '#00FFFF',
+    minWidth: 14,
+    height: 14,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  compareBadgeText: {
+    fontSize: 8,
+    color: '#0a0a0f',
+    fontWeight: '900',
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  sortButtonText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+  },
+  resultsBar: {
+    position: 'absolute',
+    top: HEADER_EXPANDED_HEIGHT + 40,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+    backgroundColor: 'rgba(10, 10, 15, 0.8)',
+    zIndex: 80,
+  },
+  resultsText: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.6)',
+  },
+  resetLink: {
+    fontSize: 12,
+    color: '#FF00FF',
+    fontWeight: '600',
+  },
+  scrollToTopButton: {
+    position: 'absolute',
+    bottom: spacing.xl,
+    right: spacing.lg,
+    zIndex: 99,
+  },
+  scrollToTopTouchable: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#FF00FF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  scrollToTopGradient: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  grid: {
+    paddingTop: HEADER_EXPANDED_HEIGHT + 60,
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
+  componentCard: {
+    width: CARD_WIDTH,
+    marginRight: spacing.lg,
+    marginBottom: spacing.lg,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  cardGradient: {
+    padding: spacing.sm,
+    height: 240,
+    justifyContent: 'space-between',
+  },
+  stockBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginBottom: spacing.xs,
+  },
+  stockDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    marginRight: 3,
+  },
+  stockText: {
+    fontSize: 8,
+    color: '#FFF',
+    fontWeight: '600',
+  },
+  imagePlaceholder: {
+    width: '100%',
+    height: 60,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+  },
+  imageText: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: 'rgba(255,255,255,0.2)',
+  },
+  componentType: {
+    fontSize: 8,
+    color: 'rgba(255,255,255,0.5)',
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  componentName: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFF',
+    lineHeight: 14,
+    marginBottom: spacing.xs,
+    flex: 1,
+  },
+  specsPreview: {
+    marginBottom: spacing.xs,
+    gap: 1,
+  },
+  specPreviewText: {
+    fontSize: 9,
+    color: 'rgba(255,255,255,0.5)',
+  },
+  componentPrice: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#FF00FF',
+    marginBottom: spacing.xs,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  compareIconButton: {
+    padding: spacing.xs,
+    backgroundColor: 'rgba(0, 255, 255, 0.1)',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 255, 255, 0.2)',
+  },
+  viewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 255, 255, 0.1)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: 4,
+    gap: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 255, 255, 0.2)',
+  },
+  viewButtonText: {
+    fontSize: 8,
+    color: '#00FFFF',
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xxl,
+    paddingHorizontal: spacing.xl,
+    marginTop: HEADER_EXPANDED_HEIGHT + 50,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    color: '#FFF',
+    fontWeight: '600',
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.6)',
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  resetButton: {
+    backgroundColor: 'rgba(255, 0, 255, 0.1)',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 255, 0.3)',
+  },
+  resetButtonText: {
+    color: '#FF00FF',
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
   toastContainer: {
     position: 'absolute',
-    top: 60,
+    top: HEADER_COLLAPSED_HEIGHT + 10,
     left: 20,
     right: 20,
     zIndex: 1000,
@@ -689,319 +1231,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     flex: 1,
-  },
-  header: {
-    paddingTop: 60,
-    paddingBottom: spacing.lg,
-    paddingHorizontal: spacing.lg,
-  },
-  headerContent: {
-    marginBottom: spacing.md,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#FFF',
-    marginBottom: 4,
-    textShadowColor: 'rgba(255, 0, 255, 0.3)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.6)',
-    letterSpacing: 1,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 12,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  searchInput: {
-    flex: 1,
-    color: '#FFF',
-    fontSize: 16,
-    marginLeft: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  categorySection: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-    backgroundColor: 'rgba(255,255,255,0.02)',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
-  },
-  sectionLabel: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.5)',
-    fontWeight: '600',
-    letterSpacing: 2,
-    marginBottom: spacing.sm,
-  },
-  categoryTabs: {
-    flexGrow: 0,
-  },
-  categoryTabsContent: {
-    paddingBottom: spacing.sm,
-    gap: spacing.sm,
-  },
-  categoryTab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    marginRight: spacing.sm,
-  },
-  categoryTabActive: {
-    backgroundColor: 'rgba(255, 0, 255, 0.1)',
-    borderColor: '#FF00FF',
-  },
-  categoryIcon: {
-    marginRight: spacing.xs,
-  },
-  categoryTabText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.7)',
-  },
-  categoryTabTextActive: {
-    color: '#FF00FF',
-  },
-  filterBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
-  },
-  filterLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  filterButtonText: {
-    color: '#FF00FF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  activeFiltersBadge: {
-    backgroundColor: 'rgba(255, 0, 255, 0.1)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  activeFiltersText: {
-    fontSize: 10,
-    color: '#FF00FF',
-    fontWeight: '600',
-  },
-  filterRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.lg,
-  },
-  compareButton: {
-    position: 'relative',
-    padding: spacing.xs,
-  },
-  compareBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: '#00FFFF',
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  compareBadgeText: {
-    fontSize: 10,
-    color: '#0a0a0f',
-    fontWeight: '900',
-  },
-  sortButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  sortButtonText: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 14,
-  },
-  resultsBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    backgroundColor: 'rgba(255,255,255,0.02)',
-  },
-  resultsText: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.6)',
-  },
-  resetLink: {
-    fontSize: 14,
-    color: '#FF00FF',
-    fontWeight: '600',
-  },
-  grid: {
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
-  componentCard: {
-    width: CARD_WIDTH,
-    marginRight: spacing.lg,
-    marginBottom: spacing.lg,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  cardGradient: {
-    padding: spacing.md,
-    height: 280,
-    justifyContent: 'space-between',
-  },
-  stockBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginBottom: spacing.sm,
-  },
-  stockDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 4,
-  },
-  stockText: {
-    fontSize: 10,
-    color: '#FFF',
-    fontWeight: '600',
-  },
-  imagePlaceholder: {
-    width: '100%',
-    height: 80,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  imageText: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: 'rgba(255,255,255,0.2)',
-  },
-  componentType: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.5)',
-    fontWeight: '600',
-    letterSpacing: 1,
-    marginBottom: spacing.xs,
-  },
-  componentName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFF',
-    lineHeight: 18,
-    marginBottom: spacing.sm,
-    flex: 1,
-  },
-  specsPreview: {
-    marginBottom: spacing.sm,
-    gap: 2,
-  },
-  specPreviewText: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.5)',
-  },
-  componentPrice: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#FF00FF',
-    marginBottom: spacing.sm,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  compareIconButton: {
-    padding: spacing.xs,
-    backgroundColor: 'rgba(0, 255, 255, 0.1)',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.2)',
-  },
-  viewButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 255, 255, 0.1)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: 6,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.2)',
-  },
-  viewButtonText: {
-    fontSize: 10,
-    color: '#00FFFF',
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xxl,
-    paddingHorizontal: spacing.xl,
-  },
-  emptyStateText: {
-    fontSize: 18,
-    color: '#FFF',
-    fontWeight: '600',
-    marginTop: spacing.md,
-    marginBottom: spacing.xs,
-  },
-  emptyStateSubtext: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.6)',
-    textAlign: 'center',
-    marginBottom: spacing.lg,
-  },
-  resetButton: {
-    backgroundColor: 'rgba(255, 0, 255, 0.1)',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 0, 255, 0.3)',
-  },
-  resetButtonText: {
-    color: '#FF00FF',
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 1,
   },
   // Modal Styles
   modalOverlay: {
