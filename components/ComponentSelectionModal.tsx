@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import {
   Dimensions,
   FlatList,
+  Modal,
   StyleSheet,
   Text,
   TextInput,
@@ -46,6 +47,8 @@ export const ComponentSelectionModal: React.FC<ComponentSelectionModalProps> = (
   const [priceSort, setPriceSort] = useState<'low' | 'high' | null>(null);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [selectedComponent, setSelectedComponent] = useState<Product | null>(currentComponent);
+  const [showRemoveConfirmation, setShowRemoveConfirmation] = useState(false);
+  const [componentToRemove, setComponentToRemove] = useState<Product | null>(null);
 
   useEffect(() => {
     if (slotType) {
@@ -86,18 +89,100 @@ export const ComponentSelectionModal: React.FC<ComponentSelectionModalProps> = (
     onSelect(component);
   };
 
+  const handleConfirmRemove = (component: Product) => {
+    setComponentToRemove(component);
+    setShowRemoveConfirmation(true);
+  };
+
   const handleRemove = () => {
-    setSelectedComponent(null);
-    // Pass null to indicate removal
-    onSelect(null as any);
+    if (componentToRemove) {
+      setSelectedComponent(null);
+      // Pass null to indicate removal
+      onSelect(null as any);
+      setShowRemoveConfirmation(false);
+      setComponentToRemove(null);
+    }
+  };
+
+  const handleReselect = (newComponent: Product) => {
+    // Directly replace the current selection with the new component
+    setSelectedComponent(newComponent);
+    onSelect(newComponent);
   };
 
   if (!slotType) {
     return null;
   }
 
+  // Remove Confirmation Modal
+  const RemoveConfirmationModal = () => (
+    <Modal
+      transparent={true}
+      visible={showRemoveConfirmation}
+      animationType="fade"
+      onRequestClose={() => setShowRemoveConfirmation(false)}
+    >
+      <View style={styles.confirmationOverlay}>
+        <View style={styles.confirmationModal}>
+          <LinearGradient
+            colors={['#0a0a0f', '#1a1a2e']}
+            style={styles.confirmationContent}
+          >
+            <View style={styles.confirmationHeader}>
+              <Ionicons name="warning" size={40} color="#FF0000" />
+              <Text style={styles.confirmationTitle}>Remove Component</Text>
+              <Text style={styles.confirmationMessage}>
+                Are you sure you want to remove this {typeLabels[slotType].toLowerCase()}?
+              </Text>
+              
+              {componentToRemove && (
+                <View style={styles.componentToRemove}>
+                  <Text style={styles.componentToRemoveName} numberOfLines={2}>
+                    {componentToRemove.name}
+                  </Text>
+                  <Text style={styles.componentToRemovePrice}>
+                    ₱{componentToRemove.price.toLocaleString()}
+                  </Text>
+                </View>
+              )}
+            </View>
+            
+            <View style={styles.confirmationActions}>
+              <TouchableOpacity 
+                style={styles.cancelButton}
+                onPress={() => setShowRemoveConfirmation(false)}
+              >
+                <LinearGradient
+                  colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
+                  style={styles.cancelButtonGradient}
+                >
+                  <Text style={styles.cancelButtonText}>CANCEL</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.confirmRemoveButton}
+                onPress={handleRemove}
+              >
+                <LinearGradient
+                  colors={['#FF0000', '#8B0000']}
+                  style={styles.confirmRemoveButtonGradient}
+                >
+                  <Ionicons name="trash" size={20} color="#FFF" />
+                  <Text style={styles.confirmRemoveButtonText}>REMOVE</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </LinearGradient>
+        </View>
+      </View>
+    </Modal>
+  );
+
   return (
     <View style={styles.modalOverlay}>
+      <RemoveConfirmationModal />
+      
       <LinearGradient
         colors={['#0a0a0f', '#1a1a2e']}
         style={styles.modalContainer}
@@ -125,10 +210,23 @@ export const ComponentSelectionModal: React.FC<ComponentSelectionModalProps> = (
               >
                 <View style={styles.currentSelectionHeader}>
                   <Text style={styles.currentSelectionTitle}>CURRENTLY SELECTED</Text>
-                  <TouchableOpacity onPress={handleRemove} style={styles.removeButton}>
-                    <Ionicons name="trash-outline" size={20} color="#FF0000" />
-                    <Text style={styles.removeButtonText}>REMOVE</Text>
-                  </TouchableOpacity>
+                  <View style={styles.currentSelectionActions}>
+                    <TouchableOpacity 
+                      style={styles.reselectButton}
+                      onPress={() => setSelectedComponent(null)}
+                    >
+                      <Ionicons name="refresh" size={16} color="#00FFFF" />
+                      <Text style={styles.reselectButtonText}>RESELECT</Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                      style={styles.removeButton}
+                      onPress={() => handleConfirmRemove(selectedComponent)}
+                    >
+                      <Ionicons name="trash-outline" size={16} color="#FF0000" />
+                      <Text style={styles.removeButtonText}>REMOVE</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
                 
                 <View style={styles.currentSelectionContent}>
@@ -257,7 +355,7 @@ export const ComponentSelectionModal: React.FC<ComponentSelectionModalProps> = (
                   styles.componentCard,
                   isSelected && styles.componentCardSelected
                 ]}
-                onPress={() => handleSelect(item)}
+                onPress={() => handleReselect(item)}
                 activeOpacity={0.8}
               >
                 <LinearGradient
@@ -295,14 +393,15 @@ export const ComponentSelectionModal: React.FC<ComponentSelectionModalProps> = (
                     {isSelected ? (
                       <TouchableOpacity
                         style={styles.replaceButton}
-                        onPress={() => handleSelect(item)}
+                        onPress={() => handleReselect(item)}
                       >
-                        <Text style={styles.replaceButtonText}>REPLACE</Text>
+                        <Ionicons name="swap-horizontal" size={16} color="#FF00FF" />
+                        <Text style={styles.replaceButtonText}>RESELECT</Text>
                       </TouchableOpacity>
                     ) : (
                       <TouchableOpacity
                         style={styles.selectButtonSmall}
-                        onPress={() => handleSelect(item)}
+                        onPress={() => handleReselect(item)}
                       >
                         <Text style={styles.selectButtonSmallText}>SELECT</Text>
                       </TouchableOpacity>
@@ -350,17 +449,17 @@ export const ComponentSelectionModal: React.FC<ComponentSelectionModalProps> = (
                         styles.actionButton,
                         isSelected ? styles.replaceButtonLarge : styles.selectButtonLarge
                       ]}
-                      onPress={() => handleSelect(item)}
+                      onPress={() => handleReselect(item)}
                     >
                       <LinearGradient
-                        colors={isSelected ? ['#FF0000', '#8B0000'] : ['#FF00FF', '#9400D3']}
+                        colors={isSelected ? ['#00FFFF', '#008B8B'] : ['#FF00FF', '#9400D3']}
                         style={styles.actionButtonGradient}
                       >
                         <Text style={styles.actionButtonText}>
-                          {isSelected ? 'REPLACE' : 'SELECT'}
+                          {isSelected ? 'RESELECT' : 'SELECT'}
                         </Text>
                         <Ionicons 
-                          name={isSelected ? "swap-horizontal" : "checkmark"} 
+                          name={isSelected ? "refresh" : "checkmark"} 
                           size={16} 
                           color="#FFF" 
                         />
@@ -468,11 +567,30 @@ const styles = StyleSheet.create({
     color: '#FF00FF',
     letterSpacing: 2,
   },
+  currentSelectionActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  reselectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 255, 255, 0.1)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 8,
+    gap: spacing.xs,
+  },
+  reselectButtonText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#00FFFF',
+    letterSpacing: 1,
+  },
   removeButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 0, 0, 0.1)',
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: 8,
     gap: spacing.xs,
@@ -682,17 +800,20 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   replaceButton: {
-    backgroundColor: 'rgba(255, 0, 0, 0.1)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 255, 255, 0.1)',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: 8,
+    gap: spacing.xs,
     borderWidth: 1,
-    borderColor: 'rgba(255, 0, 0, 0.2)',
+    borderColor: 'rgba(0, 255, 255, 0.2)',
   },
   replaceButtonText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#FF0000',
+    color: '#00FFFF',
     letterSpacing: 1,
   },
   componentImagePlaceholder: {
@@ -759,7 +880,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   replaceButtonLarge: {
-    shadowColor: '#FF0000',
+    shadowColor: '#00FFFF',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 8,
@@ -810,6 +931,105 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   doneButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  // Confirmation Modal Styles
+  confirmationOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  confirmationModal: {
+    width: '90%',
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  confirmationContent: {
+    padding: spacing.xl,
+  },
+  confirmationHeader: {
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  confirmationTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#FFF',
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  confirmationMessage: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.7)',
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+    lineHeight: 20,
+  },
+  componentToRemove: {
+    backgroundColor: 'rgba(255, 0, 0, 0.1)',
+    padding: spacing.lg,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 0, 0.2)',
+    width: '100%',
+    marginTop: spacing.md,
+  },
+  componentToRemoveName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFF',
+    marginBottom: spacing.xs,
+    textAlign: 'center',
+  },
+  componentToRemovePrice: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#FF0000',
+    textAlign: 'center',
+  },
+  confirmationActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  cancelButton: {
+    flex: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  cancelButtonGradient: {
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  confirmRemoveButton: {
+    flex: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  confirmRemoveButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.lg,
+    gap: spacing.sm,
+  },
+  confirmRemoveButtonText: {
     color: '#FFF',
     fontSize: 16,
     fontWeight: '800',
