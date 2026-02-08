@@ -18,7 +18,7 @@ import {
 interface CompareModalProps {
   visible: boolean;
   onClose: () => void;
-  fullScreen?: boolean; // Add this
+  fullScreen?: boolean;
 }
 
 interface ComparisonAnalysis {
@@ -606,9 +606,7 @@ const styles = StyleSheet.create({
     bottom: spacing.sm,
     right: spacing.sm,
   },
-  bestRemoveButton: {
-    // Additional styles for best product remove button
-  },
+  bestRemoveButton: {},
   specsScroll: {
     marginTop: 140,
     marginLeft: 120,

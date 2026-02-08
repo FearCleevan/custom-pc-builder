@@ -1,15 +1,14 @@
-import { SpecTable } from '@/components/SpecTable';
 import { allComponents, getComponentsByType } from '@/data/mockData';
 import { useBuildStore } from '@/store/useBuildStore';
+import { useCompareStore } from '@/store/useCompareStore';
 import { spacing } from '@/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Alert,
   Dimensions,
-  LinearGradient,
-  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,299 +16,354 @@ import {
   View,
 } from 'react-native';
 
-export default function ProductDetailModal() {
+// Toast Component for this screen
+const ToastNotification = ({ visible, message, type }: { visible: boolean, message: string, type: 'success' | 'error' }) => {
+  if (!visible) return null;
+
+  return (
+    <View style={[
+      styles.toastContainer,
+      type === 'success' ? styles.toastSuccess : styles.toastError
+    ]}>
+      <Ionicons 
+        name={type === 'success' ? "checkmark-circle" : "alert-circle"} 
+        size={20} 
+        color="#FFF" 
+      />
+      <Text style={styles.toastText}>{message}</Text>
+    </View>
+  );
+};
+
+export default function ProductDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ 
     id: string; 
     type: string;
-    from?: string;
   }>();
   
   const addPart = useBuildStore((state) => state.addPart);
+  const addToCompare = useCompareStore((state) => state.addProduct);
+  
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
-  // Find the product using the new mockData structure
+  // Find the product
   const product = allComponents.find(p => p.id === params.id) || 
                   getComponentsByType(params.type).find(p => p.id === params.id);
 
-  if (!product) {
-    return (
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={true}
-        onRequestClose={() => router.back()}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <LinearGradient
-              colors={['#0a0a0f', '#1a1a2e']}
-              style={styles.gradientBackground}
-            >
-              <Text style={styles.errorText}>Product not found</Text>
-              <TouchableOpacity 
-                style={styles.closeButton}
-                onPress={() => router.back()}
-              >
-                <LinearGradient
-                  colors={['#FF00FF', '#9400D3']}
-                  style={styles.closeButtonGradient}
-                >
-                  <Text style={styles.closeButtonText}>CLOSE</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </LinearGradient>
-          </View>
-        </View>
-      </Modal>
-    );
-  }
+  const showToastNotification = (message: string, type: 'success' | 'error' = 'success') => {
+    setToastMessage(message);
+    setToastType(type);
+    setShowToast(true);
+    
+    setTimeout(() => {
+      setShowToast(false);
+    }, 3000);
+  };
 
   const handleAddToBuild = () => {
-    // Check if this is a valid component type for building
+    if (!product) return;
+
     const buildComponentTypes = ['cpu', 'gpu', 'motherboard', 'ram', 'cooler', 'storage', 'psu', 'case'];
     
     if (buildComponentTypes.includes(product.type)) {
       addPart(product);
-      Alert.alert(
-        'Added to Build',
-        `${product.name} has been added to your build.`,
-        [
-          { 
-            text: 'Continue Browsing',
-            style: 'cancel'
-          },
-          { 
-            text: 'View Build', 
-            style: 'default',
-            onPress: () => {
-              router.back(); // Close modal first
-              router.push('/(tabs)/build');
-            }
-          },
-        ]
-      );
+      showToastNotification(`${product.name} has been added to your build.`, 'success');
     } else {
-      Alert.alert(
-        'Cannot Add to Build',
-        'This component type cannot be added to a PC build.',
-        [{ text: 'OK' }]
-      );
+      showToastNotification('This component type cannot be added to a PC build.', 'error');
     }
   };
 
   const handleAddToCompare = () => {
-    // This would integrate with your compare store
-    Alert.alert(
-      'Compare Feature',
-      'This feature will be available soon.',
-      [{ text: 'OK' }]
-    );
+    if (!product) return;
+    
+    addToCompare(product);
+    showToastNotification(`${product.name} has been added to compare.`, 'success');
   };
 
   const handleView3D = () => {
-    if (product.has3D) {
+    if (product?.has3D) {
       Alert.alert(
         '3D Model',
         '3D model viewer will be available soon.',
         [{ text: 'OK' }]
       );
     } else {
-      Alert.alert(
-        '3D Model Not Available',
-        'This product does not have a 3D model.',
-        [{ text: 'OK' }]
-      );
+      showToastNotification('This product does not have a 3D model.', 'error');
     }
   };
 
-  return (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={true}
-      onRequestClose={() => router.back()}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          {/* Header */}
-          <LinearGradient
-            colors={['#0a0a0f', '#1a1a2e']}
-            style={styles.headerGradient}
+  if (!product) {
+    return (
+      <View style={styles.container}>
+        <LinearGradient
+          colors={['#0a0a0f', '#1a1a2e']}
+          style={styles.gradientBackground}
+        >
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => router.back()}
           >
-            <View style={styles.modalHeader}>
-              <TouchableOpacity 
-                style={styles.backButton}
-                onPress={() => router.back()}
-              >
-                <Ionicons name="arrow-back" size={24} color="#FFF" />
-              </TouchableOpacity>
-              
-              <Text style={styles.modalTitle} numberOfLines={1}>
-                {product.type.toUpperCase()}
-              </Text>
-              
-              <View style={styles.headerRight} />
-            </View>
-          </LinearGradient>
-
-          <ScrollView 
-            style={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Product Image */}
-            <View style={styles.imageContainer}>
+            <Ionicons name="arrow-back" size={24} color="#FFF" />
+          </TouchableOpacity>
+          
+          <View style={styles.errorContent}>
+            <Ionicons name="alert-circle" size={64} color="#FF0000" />
+            <Text style={styles.errorText}>Product not found</Text>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => router.back()}
+            >
               <LinearGradient
-                colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
-                style={styles.imagePlaceholder}
+                colors={['#FF00FF', '#9400D3']}
+                style={styles.closeButtonGradient}
               >
-                <Text style={styles.imageText}>
-                  {product.type.charAt(0).toUpperCase()}
-                </Text>
+                <Text style={styles.closeButtonText}>GO BACK</Text>
               </LinearGradient>
-            </View>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+      </View>
+    );
+  }
 
-            {/* Product Info */}
-            <View style={styles.infoSection}>
-              <Text style={styles.productName}>{product.name}</Text>
-              
-              <View style={styles.priceStockRow}>
-                <Text style={styles.price}>₱{product.price.toLocaleString()}</Text>
-                <View style={[
-                  styles.stockBadge,
-                  { backgroundColor: product.stock === 'In stock' ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 0, 0, 0.1)' }
-                ]}>
-                  <View style={[
-                    styles.stockDot,
-                    { backgroundColor: product.stock === 'In stock' ? '#00FF00' : '#FF0000' }
-                  ]} />
-                  <Text style={[
-                    styles.stockText,
-                    { color: product.stock === 'In stock' ? '#00FF00' : '#FF0000' }
-                  ]}>
-                    {product.stock}
-                  </Text>
-                </View>
-              </View>
+  return (
+    <View style={styles.container}>
+      {/* Toast Notification */}
+      <ToastNotification 
+        visible={showToast} 
+        message={toastMessage} 
+        type={toastType} 
+      />
 
-              {product.store && (
-                <View style={styles.storeRow}>
-                  <Ionicons name="storefront" size={16} color="#666" />
-                  <Text style={styles.storeText}>{product.store}</Text>
-                </View>
-              )}
-
-              {/* Action Buttons Row */}
-              <View style={styles.actionButtonsRow}>
-                {product.has3D && (
-                  <TouchableOpacity 
-                    style={styles.view3DButton}
-                    onPress={handleView3D}
-                  >
-                    <Ionicons name="cube" size={16} color="#00FFFF" />
-                    <Text style={styles.view3DButtonText}>3D VIEW</Text>
-                  </TouchableOpacity>
-                )}
-                
-                <TouchableOpacity 
-                  style={styles.compareButton}
-                  onPress={handleAddToCompare}
-                >
-                  <Ionicons name="git-compare" size={16} color="#00FFFF" />
-                  <Text style={styles.compareButtonText}>COMPARE</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Specifications */}
-            <View style={styles.specsSection}>
-              <Text style={styles.sectionTitle}>SPECIFICATIONS</Text>
-              <View style={styles.specsContainer}>
-                <SpecTable specs={product.specs} />
-              </View>
-            </View>
-          </ScrollView>
-
-          {/* Footer Actions */}
-          <LinearGradient
-            colors={['rgba(10, 10, 15, 0.8)', 'rgba(10, 10, 15, 1)']}
-            style={styles.footerGradient}
+      {/* Header */}
+      <LinearGradient
+        colors={['#000000', '#1a1a2e']}
+        style={styles.header}
+      >
+        <View style={styles.headerContent}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => router.back()}
           >
-            <View style={styles.footer}>
-              <TouchableOpacity 
-                style={styles.secondaryButton}
-                onPress={() => router.back()}
-              >
-                <LinearGradient
-                  colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
-                  style={styles.secondaryButtonGradient}
-                >
-                  <Ionicons name="arrow-back" size={20} color="#FFF" />
-                  <Text style={styles.secondaryButtonText}>BACK</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.primaryButton}
-                onPress={handleAddToBuild}
-              >
-                <LinearGradient
-                  colors={['#FF00FF', '#9400D3']}
-                  style={styles.primaryButtonGradient}
-                >
-                  <Ionicons name="add-circle" size={24} color="#FFF" />
-                  <Text style={styles.primaryButtonText}>ADD TO BUILD</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
+            <Ionicons name="arrow-back" size={24} color="#FFF" />
+          </TouchableOpacity>
+          
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {product.type.toUpperCase()}
+          </Text>
+          
+          <View style={styles.headerRight} />
+        </View>
+      </LinearGradient>
+
+      <ScrollView 
+        style={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Product Image */}
+        <View style={styles.imageContainer}>
+          <LinearGradient
+            colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
+            style={styles.imagePlaceholder}
+          >
+            <Text style={styles.imageText}>
+              {product.type.charAt(0).toUpperCase()}
+            </Text>
           </LinearGradient>
         </View>
-      </View>
-    </Modal>
+
+        {/* Product Info */}
+        <View style={styles.infoSection}>
+          <Text style={styles.productName}>{product.name}</Text>
+          
+          <View style={styles.priceStockRow}>
+            <Text style={styles.price}>₱{product.price.toLocaleString()}</Text>
+            <View style={[
+              styles.stockBadge,
+              { backgroundColor: product.stock === 'In stock' ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 0, 0, 0.1)' }
+            ]}>
+              <View style={[
+                styles.stockDot,
+                { backgroundColor: product.stock === 'In stock' ? '#00FF00' : '#FF0000' }
+              ]} />
+              <Text style={[
+                styles.stockText,
+                { color: product.stock === 'In stock' ? '#00FF00' : '#FF0000' }
+              ]}>
+                {product.stock}
+              </Text>
+            </View>
+          </View>
+
+          {product.store && (
+            <View style={styles.storeRow}>
+              <Ionicons name="storefront" size={16} color="#666" />
+              <Text style={styles.storeText}>{product.store}</Text>
+            </View>
+          )}
+
+          {/* Action Buttons Row */}
+          <View style={styles.actionButtonsRow}>
+            {product.has3D && (
+              <TouchableOpacity 
+                style={styles.view3DButton}
+                onPress={handleView3D}
+              >
+                <Ionicons name="cube" size={16} color="#00FFFF" />
+                <Text style={styles.view3DButtonText}>3D VIEW</Text>
+              </TouchableOpacity>
+            )}
+            
+            <TouchableOpacity 
+              style={styles.compareButton}
+              onPress={handleAddToCompare}
+            >
+              <Ionicons name="git-compare" size={16} color="#00FFFF" />
+              <Text style={styles.compareButtonText}>COMPARE</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Specifications */}
+        <View style={styles.specsSection}>
+          <Text style={styles.sectionTitle}>SPECIFICATIONS</Text>
+          <View style={styles.specsContainer}>
+            {Object.entries(product.specs).map(([key, value], index) => (
+              <View 
+                key={key} 
+                style={[
+                  styles.specRow,
+                  index % 2 === 0 && styles.specRowAlt
+                ]}
+              >
+                <Text style={styles.specKey}>{key}</Text>
+                <Text style={styles.specValue}>{String(value)}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Footer Actions */}
+      <LinearGradient
+        colors={['rgba(10, 10, 15, 0.8)', 'rgba(10, 10, 15, 1)']}
+        style={styles.footerGradient}
+      >
+        <View style={styles.footer}>
+          <TouchableOpacity 
+            style={styles.secondaryButton}
+            onPress={() => router.back()}
+          >
+            <LinearGradient
+              colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
+              style={styles.secondaryButtonGradient}
+            >
+              <Ionicons name="arrow-back" size={20} color="#FFF" />
+              <Text style={styles.secondaryButtonText}>BACK</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.primaryButton}
+            onPress={handleAddToBuild}
+          >
+            <LinearGradient
+              colors={['#FF00FF', '#9400D3']}
+              style={styles.primaryButtonGradient}
+            >
+              <Ionicons name="add-circle" size={24} color="#FFF" />
+              <Text style={styles.primaryButtonText}>ADD TO BUILD</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+    </View>
   );
 }
 
 const { width, height } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
-  modalOverlay: {
+  container: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
     backgroundColor: '#0a0a0f',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    maxHeight: '90%',
+  },
+  toastContainer: {
+    position: 'absolute',
+    top: 100,
+    left: 20,
+    right: 20,
+    zIndex: 1000,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderRadius: 12,
+    gap: spacing.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  toastSuccess: {
+    backgroundColor: 'rgba(0, 255, 0, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 255, 0, 0.3)',
+  },
+  toastError: {
+    backgroundColor: 'rgba(255, 0, 0, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 0, 0.3)',
+  },
+  toastText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
   },
   gradientBackground: {
     flex: 1,
-    padding: spacing.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  headerGradient: {
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+  header: {
+    paddingTop: 60,
+    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.lg,
   },
-  modalHeader: {
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: spacing.lg,
-    paddingTop: spacing.xl,
   },
   backButton: {
     padding: spacing.sm,
   },
-  modalTitle: {
+  headerTitle: {
     fontSize: 16,
     fontWeight: '800',
     color: '#FFF',
     letterSpacing: 2,
+    flex: 1,
+    textAlign: 'center',
   },
   headerRight: {
     width: 40,
+  },
+  errorContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xl,
+  },
+  errorText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFF',
+    marginTop: spacing.xl,
+    marginBottom: spacing.xl,
+    textAlign: 'center',
   },
   scrollContent: {
     flex: 1,
@@ -435,12 +489,28 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
   },
-  errorText: {
-    fontSize: 20,
-    fontWeight: '700',
+  specRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  specRowAlt: {
+    backgroundColor: 'rgba(255,255,255,0.02)',
+  },
+  specKey: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.7)',
+    flex: 1,
+  },
+  specValue: {
+    fontSize: 14,
     color: '#FFF',
-    marginBottom: spacing.xl,
-    textAlign: 'center',
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'right',
   },
   closeButton: {
     borderRadius: 16,
@@ -459,8 +529,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   footerGradient: {
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
     paddingTop: spacing.md,
   },
   footer: {

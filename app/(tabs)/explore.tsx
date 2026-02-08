@@ -11,7 +11,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
   Dimensions,
   FlatList,
   Modal,
@@ -23,8 +22,29 @@ import {
   View,
 } from 'react-native';
 
+// Toast Component
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - spacing.lg * 3) / 2;
+
+// Toast Component
+const ToastNotification = ({ visible, message, type }: { visible: boolean, message: string, type: 'success' | 'error' }) => {
+  if (!visible) return null;
+
+  return (
+    <View style={[
+      styles.toastContainer,
+      type === 'success' ? styles.toastSuccess : styles.toastError
+    ]}>
+      <Ionicons 
+        name={type === 'success' ? "checkmark-circle" : "alert-circle"} 
+        size={20} 
+        color="#FFF" 
+      />
+      <Text style={styles.toastText}>{message}</Text>
+    </View>
+  );
+};
 
 export default function ExploreScreen() {
   const router = useRouter();
@@ -38,6 +58,9 @@ export default function ExploreScreen() {
   const [sortBy, setSortBy] = useState('name');
   const [inStockOnly, setInStockOnly] = useState(false);
   const [filters, setFilters] = useState<Record<string, any>>({});
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState<'success' | 'error'>('success');
 
   const addToCompare = useCompareStore((state) => state.addProduct);
   const compareProducts = useCompareStore((state) => state.products);
@@ -200,13 +223,20 @@ export default function ExploreScreen() {
     });
   };
 
+  const showToastNotification = (message: string, type: 'success' | 'error' = 'success') => {
+    setToastMessage(message);
+    setToastType(type);
+    setShowToast(true);
+    
+    // Auto hide after 3 seconds
+    setTimeout(() => {
+      setShowToast(false);
+    }, 3000);
+  };
+
   const handleAddToCompare = (component: ComponentItem) => {
     addToCompare(component);
-    Alert.alert(
-      'Added to Compare',
-      `${component.name} has been added to compare.`,
-      [{ text: 'OK' }]
-    );
+    showToastNotification(`${component.name} has been added to compare.`, 'success');
   };
 
   const handleFilterChange = (filterId: string, value: any) => {
@@ -224,14 +254,20 @@ export default function ExploreScreen() {
     setFilters({});
   };
 
-  // Always show category tabs
+  // Reset filters when category changes
   useEffect(() => {
-    // Reset filters when category changes
     setFilters({});
   }, [selectedCategory]);
 
   return (
     <View style={styles.container}>
+      {/* Toast Notification */}
+      <ToastNotification 
+        visible={showToast} 
+        message={toastMessage} 
+        type={toastType} 
+      />
+
       {/* Header */}
       <LinearGradient
         colors={['#000000', '#1a1a2e']}
@@ -337,14 +373,9 @@ export default function ExploreScreen() {
             style={styles.compareButton}
             onPress={() => {
               if (compareProducts.length > 0) {
-                // Navigate to compare screen
                 router.push('/compare');
               } else {
-                Alert.alert(
-                  'Compare List Empty',
-                  'Add some components to compare first.',
-                  [{ text: 'OK' }]
-                );
+                showToastNotification('Add some components to compare first.', 'error');
               }
             }}
           >
@@ -359,16 +390,19 @@ export default function ExploreScreen() {
           <TouchableOpacity
             style={styles.sortButton}
             onPress={() => {
-              Alert.alert(
-                'Sort By',
-                '',
-                [
-                  { text: 'Name (A-Z)', onPress: () => setSortBy('name') },
-                  { text: 'Price: Low to High', onPress: () => setSortBy('price-low') },
-                  { text: 'Price: High to Low', onPress: () => setSortBy('price-high') },
-                  { text: 'Cancel', style: 'cancel' }
-                ]
-              );
+              // Simplified sort alert - you might want to create a proper modal for this
+              const sortOptions = [
+                { text: 'Name (A-Z)', value: 'name' },
+                { text: 'Price: Low to High', value: 'price-low' },
+                { text: 'Price: High to Low', value: 'price-high' },
+              ];
+              
+              // You can replace this with a custom modal
+              setSortBy(prev => {
+                const currentIndex = sortOptions.findIndex(opt => opt.value === prev);
+                const nextIndex = (currentIndex + 1) % sortOptions.length;
+                return sortOptions[nextIndex].value;
+              });
             }}
           >
             <Text style={styles.sortButtonText}>
@@ -622,6 +656,39 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0a0a0f',
+  },
+  toastContainer: {
+    position: 'absolute',
+    top: 60,
+    left: 20,
+    right: 20,
+    zIndex: 1000,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    borderRadius: 12,
+    gap: spacing.sm,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  toastSuccess: {
+    backgroundColor: 'rgba(0, 255, 0, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 255, 0, 0.3)',
+  },
+  toastError: {
+    backgroundColor: 'rgba(255, 0, 0, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 0, 0, 0.3)',
+  },
+  toastText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
   },
   header: {
     paddingTop: 60,
