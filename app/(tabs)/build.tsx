@@ -73,7 +73,7 @@ export default function BuildScreen() {
         Object.entries(series.components).forEach(([type, componentId]) => {
           const component = allComponents.find(c => c.id === componentId);
           if (component) {
-            addPart(component);
+            addPart(type as ProductType, component);
           }
         });
         
@@ -91,7 +91,7 @@ export default function BuildScreen() {
         Object.entries(components).forEach(([type, componentId]) => {
           const component = allComponents.find(c => c.id === componentId);
           if (component) {
-            addPart(component);
+            addPart(type as ProductType, component);
           }
         });
       } catch (error) {
@@ -131,16 +131,24 @@ export default function BuildScreen() {
     );
   };
 
-  const handleComponentSelect = (component: Product) => {
-    if (selectedSlotType) {
-      addPart(component);
-      setShowComponentModal(false);
-      setSelectedSlotType(null);
-      
-      // Auto-expand the slot to show the selected component
-      setExpandedSlot(selectedSlotType);
+const handleComponentSelect = (component: Product | null) => {
+  if (selectedSlotType) {
+    if (component) {
+      addPart(selectedSlotType, component);
+    } else {
+      removePart(selectedSlotType);
     }
-  };
+    setShowComponentModal(false);
+    setSelectedSlotType(null);
+    
+    // Auto-expand the slot to show the selected component
+    if (component) {
+      setExpandedSlot(selectedSlotType);
+    } else {
+      setExpandedSlot(null);
+    }
+  }
+};
 
   const handleSaveBuild = () => {
     const hasBuild = Object.values(buildState).some(product => product !== null);
@@ -370,20 +378,65 @@ export default function BuildScreen() {
             </Text>
           </LinearGradient>
         </TouchableOpacity>
+      </View>
+
+      {/* Browse Pre-Built Series Section */}
+      <View style={styles.prebuiltSection}>
+        <View style={styles.prebuiltHeader}>
+          <Text style={styles.sectionTitle}>Need Inspiration?</Text>
+          <Text style={styles.sectionSubtitle}>
+            Start with a professionally configured build
+          </Text>
+        </View>
         
         <TouchableOpacity 
-          style={styles.tertiaryButton}
-          onPress={() => router.push('/(modals)/series-details')}
+          style={styles.prebuiltCard}
+          onPress={() => router.push('/prebuilt-series')}
           activeOpacity={0.8}
         >
           <LinearGradient
             colors={['rgba(0, 255, 255, 0.1)', 'rgba(0, 255, 255, 0.05)']}
-            style={styles.tertiaryButtonGradient}
+            style={styles.prebuiltCardGradient}
           >
-            <Ionicons name="cube" size={20} color="#00FFFF" />
-            <Text style={styles.tertiaryButtonText}>
-              BROWSE PRE-BUILT SERIES
-            </Text>
+            <View style={styles.prebuiltCardContent}>
+              <View style={styles.prebuiltIconContainer}>
+                <Ionicons name="cube" size={32} color="#00FFFF" />
+                <View style={styles.prebuiltIconGlow} />
+              </View>
+              
+              <View style={styles.prebuiltInfo}>
+                <Text style={styles.prebuiltTitle}>
+                  BROWSE PRE-BUILT SERIES
+                </Text>
+                <Text style={styles.prebuiltDescription}>
+                  Explore curated builds for gaming, workstations, and industrial applications
+                </Text>
+                
+                <View style={styles.prebuiltTags}>
+                  <View style={styles.tag}>
+                    <Text style={styles.tagText}>Gaming PC</Text>
+                  </View>
+                  <View style={styles.tag}>
+                    <Text style={styles.tagText}>Workstation</Text>
+                  </View>
+                  <View style={styles.tag}>
+                    <Text style={styles.tagText}>Industrial</Text>
+                  </View>
+                </View>
+              </View>
+              
+              <Ionicons name="arrow-forward-circle" size={32} color="#00FFFF" />
+            </View>
+            
+            <LinearGradient
+              colors={['#00FFFF', '#008B8B']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.exploreButton}
+            >
+              <Text style={styles.exploreButtonText}>EXPLORE SERIES</Text>
+              <Ionicons name="rocket" size={16} color="#FFF" />
+            </LinearGradient>
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -405,6 +458,7 @@ export default function BuildScreen() {
             setShowComponentModal(false);
             setSelectedSlotType(null);
           }}
+          currentComponent={selectedSlotType ? getProductForSlot(selectedSlotType) : null}
         />
       </Modal>
     </ScrollView>
@@ -652,7 +706,7 @@ const styles = StyleSheet.create({
   actionsContainer: {
     padding: spacing.lg,
     gap: spacing.md,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.xl,
   },
   primaryButton: {
     borderRadius: 16,
@@ -697,24 +751,94 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1,
   },
-  tertiaryButton: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.3)',
+  // Pre-built Series Section
+  prebuiltSection: {
+    padding: spacing.lg,
+    paddingBottom: spacing.xxl + 20,
+    marginTop: spacing.lg,
   },
-  tertiaryButtonGradient: {
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.xl,
+  prebuiltHeader: {
+    marginBottom: spacing.lg,
+  },
+  prebuiltCard: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: 'rgba(0, 255, 255, 0.3)',
+    shadowColor: '#00FFFF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  prebuiltCardGradient: {
+    padding: spacing.lg,
+  },
+  prebuiltCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  prebuiltIconContainer: {
+    position: 'relative',
+    marginRight: spacing.lg,
+  },
+  prebuiltIconGlow: {
+    position: 'absolute',
+    top: -10,
+    left: -10,
+    right: -10,
+    bottom: -10,
+    backgroundColor: '#00FFFF',
+    opacity: 0.2,
+    borderRadius: 26,
+  },
+  prebuiltInfo: {
+    flex: 1,
+  },
+  prebuiltTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#00FFFF',
+    marginBottom: spacing.xs,
+    letterSpacing: 1,
+  },
+  prebuiltDescription: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.7)',
+    marginBottom: spacing.md,
+    lineHeight: 20,
+  },
+  prebuiltTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  tag: {
+    backgroundColor: 'rgba(0, 255, 255, 0.1)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 255, 255, 0.2)',
+  },
+  tagText: {
+    fontSize: 12,
+    color: '#00FFFF',
+    fontWeight: '600',
+  },
+  exploreButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: spacing.lg,
+    borderRadius: 12,
     gap: spacing.sm,
   },
-  tertiaryButtonText: {
-    color: '#00FFFF',
-    fontSize: 14,
-    fontWeight: '600',
+  exploreButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '800',
     letterSpacing: 1,
   },
 });
