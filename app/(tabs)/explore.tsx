@@ -25,7 +25,7 @@ import {
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - spacing.lg * 3) / 2;
-const HEADER_EXPANDED_HEIGHT = 120; // Reduced from 160
+const HEADER_EXPANDED_HEIGHT = 130; // Reduced from 160
 const HEADER_COLLAPSED_HEIGHT = 80;
 
 // Toast Component
@@ -37,10 +37,10 @@ const ToastNotification = ({ visible, message, type }: { visible: boolean, messa
       styles.toastContainer,
       type === 'success' ? styles.toastSuccess : styles.toastError
     ]}>
-      <Ionicons 
-        name={type === 'success' ? "checkmark-circle" : "alert-circle"} 
-        size={20} 
-        color="#FFF" 
+      <Ionicons
+        name={type === 'success' ? "checkmark-circle" : "alert-circle"}
+        size={20}
+        color="#FFF"
       />
       <Text style={styles.toastText}>{message}</Text>
     </View>
@@ -256,7 +256,7 @@ export default function ExploreScreen() {
     setToastMessage(message);
     setToastType(type);
     setShowToast(true);
-    
+
     // Auto hide after 3 seconds
     setTimeout(() => {
       setShowToast(false);
@@ -295,10 +295,10 @@ export default function ExploreScreen() {
   return (
     <View style={styles.container}>
       {/* Toast Notification */}
-      <ToastNotification 
-        visible={showToast} 
-        message={toastMessage} 
-        type={toastType} 
+      <ToastNotification
+        visible={showToast}
+        message={toastMessage}
+        type={toastType}
       />
 
       {/* Animated Header */}
@@ -308,10 +308,10 @@ export default function ExploreScreen() {
           style={styles.headerGradient}
         >
           {/* Compact Header (shown when scrolled) */}
-          <Animated.View 
+          <Animated.View
             style={[
               styles.compactHeader,
-              { 
+              {
                 opacity: scrollY.interpolate({
                   inputRange: [80, 100],
                   outputRange: [0, 1],
@@ -321,34 +321,35 @@ export default function ExploreScreen() {
                 top: 0,
                 left: 0,
                 right: 0,
-                height: HEADER_COLLAPSED_HEIGHT,
+                height: 50,
+                paddingTop: 10,
               }
             ]}
           >
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.menuButton}
               onPress={() => setShowFilters(true)}
             >
               <Ionicons name="filter" size={22} color="#FF00FF" />
             </TouchableOpacity>
-            
-            <Animated.View style={{ 
+
+            <Animated.View style={{
               transform: [
                 { scale: titleScale },
                 { translateY: titleTranslateY }
-              ] 
+              ]
             }}>
               <Text style={styles.compactTitle}>Browse</Text>
             </Animated.View>
-            
+
             <View style={styles.compactHeaderRight}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.compactSearchButton}
                 onPress={scrollToTop}
               >
                 <Ionicons name="search" size={20} color="#00FFFF" />
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={styles.compareButton}
                 onPress={() => {
@@ -370,10 +371,10 @@ export default function ExploreScreen() {
           </Animated.View>
 
           {/* Expanded Header Content - Only shows when not scrolled */}
-          <Animated.View 
+          <Animated.View
             style={[
               styles.expandedHeader,
-              { 
+              {
                 opacity: headerOpacity,
                 position: 'absolute',
                 top: 0,
@@ -412,7 +413,7 @@ export default function ExploreScreen() {
           {/* Category Tabs - Positioned at bottom of header */}
           <View style={[
             styles.categorySection,
-            { 
+            {
               position: 'absolute',
               bottom: 0,
               left: 0,
@@ -467,357 +468,362 @@ export default function ExploreScreen() {
             </ScrollView>
           </View>
         </LinearGradient>
-      </Animated.View>
+      </Animated.View >
 
-      {/* Filter Bar - Hidden, replaced by menu button in compact header */}
-      <Animated.View 
-        style={[
-          styles.filterBar,
-          { 
-            opacity: scrollY.interpolate({
+    {/* Filter Bar - Hidden, replaced by menu button in compact header */}
+    <Animated.View
+      style={[
+        styles.filterBar,
+        {
+          opacity: scrollY.interpolate({
+            inputRange: [0, 50],
+            outputRange: [1, 0],
+            extrapolate: 'clamp',
+          }),
+          transform: [{
+            translateY: scrollY.interpolate({
               inputRange: [0, 50],
-              outputRange: [1, 0],
-              extrapolate: 'clamp',
-            }),
-            transform: [{
-              translateY: scrollY.interpolate({
-                inputRange: [0, 50],
-                outputRange: [0, -20],
-                extrapolate: 'clamp',
-              })
-            }]
-          }
-        ]}
-      >
-        <View style={styles.filterLeft}>
-          <TouchableOpacity
-            style={styles.filterButton}
-            onPress={() => setShowFilters(true)}
-          >
-            <Ionicons name="filter" size={18} color="#FF00FF" />
-            <Text style={styles.filterButtonText}>Filters</Text>
-          </TouchableOpacity>
-
-          {Object.keys(filters).length > 0 && (
-            <View style={styles.activeFiltersBadge}>
-              <Text style={styles.activeFiltersText}>
-                {Object.keys(filters).length}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.filterRight}>
-          <TouchableOpacity
-            style={styles.sortButton}
-            onPress={() => {
-              const sortOptions = [
-                { text: 'Name (A-Z)', value: 'name' },
-                { text: 'Price: Low to High', value: 'price-low' },
-                { text: 'Price: High to Low', value: 'price-high' },
-              ];
-              
-              setSortBy(prev => {
-                const currentIndex = sortOptions.findIndex(opt => opt.value === prev);
-                const nextIndex = (currentIndex + 1) % sortOptions.length;
-                return sortOptions[nextIndex].value;
-              });
-            }}
-          >
-            <Text style={styles.sortButtonText}>
-              {sortBy === 'price-low' ? 'Price ↑' :
-                sortBy === 'price-high' ? 'Price ↓' : 'Name'}
-            </Text>
-            <Ionicons name="chevron-down" size={14} color="#666" />
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
-
-      {/* Results Count */}
-      <Animated.View 
-        style={[
-          styles.resultsBar,
-          { 
-            opacity: scrollY.interpolate({
-              inputRange: [0, 50],
-              outputRange: [1, 0],
+              outputRange: [0, -20],
               extrapolate: 'clamp',
             })
-          }
-        ]}
-      >
-        <Text style={styles.resultsText}>
-          {filteredComponents.length} {filteredComponents.length === 1 ? 'item' : 'items'} found
-        </Text>
-        <TouchableOpacity onPress={handleResetFilters}>
-          <Text style={styles.resetLink}>Reset All</Text>
-        </TouchableOpacity>
-      </Animated.View>
-
-      {/* Scroll To Top Button */}
-      <Animated.View
-        style={[
-          styles.scrollToTopButton,
-          {
-            opacity: scrollY.interpolate({
-              inputRange: [100, 200],
-              outputRange: [0, 1],
-              extrapolate: 'clamp',
-            }),
-            transform: [{
-              translateY: scrollY.interpolate({
-                inputRange: [100, 200],
-                outputRange: [20, 0],
-                extrapolate: 'clamp',
-              })
-            }]
-          }
-        ]}
-      >
+          }]
+        }
+      ]}
+    >
+      <View style={styles.filterLeft}>
         <TouchableOpacity
-          style={styles.scrollToTopTouchable}
-          onPress={scrollToTop}
+          style={styles.filterButton}
+          onPress={() => setShowFilters(true)}
         >
-          <LinearGradient
-            colors={['#FF00FF', '#9400D3']}
-            style={styles.scrollToTopGradient}
-          >
-            <Ionicons name="arrow-up" size={20} color="#FFF" />
-          </LinearGradient>
+          <Ionicons name="filter" size={18} color="#FF00FF" />
+          <Text style={styles.filterButtonText}>Filters</Text>
         </TouchableOpacity>
-      </Animated.View>
 
-      {/* Components Grid */}
-      <FlatList
-        ref={flatListRef}
-        data={filteredComponents}
-        keyExtractor={(item) => item.id}
-        numColumns={2}
-        contentContainerStyle={styles.grid}
-        showsVerticalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
+        {Object.keys(filters).length > 0 && (
+          <View style={styles.activeFiltersBadge}>
+            <Text style={styles.activeFiltersText}>
+              {Object.keys(filters).length}
+            </Text>
+          </View>
         )}
-        scrollEventThrottle={16}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.componentCard}
-            onPress={() => handleComponentPress(item)}
-            activeOpacity={0.8}
-          >
-            <LinearGradient
-              colors={['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)']}
-              style={styles.cardGradient}
-            >
-              {/* Stock Badge */}
-              <View style={styles.stockBadge}>
-                <View style={[
-                  styles.stockDot,
-                  { backgroundColor: item.stock === 'In stock' ? '#00FF00' : '#FF0000' }
-                ]} />
-                <Text style={styles.stockText}>{item.stock}</Text>
-              </View>
+      </View>
 
-              {/* Component Image/Icon */}
-              <View style={styles.imagePlaceholder}>
-                <Text style={styles.imageText}>
-                  {item.type.charAt(0).toUpperCase()}
+      <View style={styles.filterRight}>
+        <TouchableOpacity
+          style={styles.sortButton}
+          onPress={() => {
+            const sortOptions = [
+              { text: 'Name (A-Z)', value: 'name' },
+              { text: 'Price: Low to High', value: 'price-low' },
+              { text: 'Price: High to Low', value: 'price-high' },
+            ];
+
+            setSortBy(prev => {
+              const currentIndex = sortOptions.findIndex(opt => opt.value === prev);
+              const nextIndex = (currentIndex + 1) % sortOptions.length;
+              return sortOptions[nextIndex].value;
+            });
+          }}
+        >
+          <Text style={styles.sortButtonText}>
+            {sortBy === 'price-low' ? 'Price ↑' :
+              sortBy === 'price-high' ? 'Price ↓' : 'Name'}
+          </Text>
+          <Ionicons name="chevron-down" size={14} color="#666" />
+        </TouchableOpacity>
+      </View>
+    </Animated.View >
+
+    {/* Results Count */ }
+  < Animated.View
+    style={
+      [
+        styles.resultsBar,
+        {
+          opacity: scrollY.interpolate({
+            inputRange: [0, 50],
+            outputRange: [1, 0],
+            extrapolate: 'clamp',
+          })
+        }
+      ]}
+  >
+    <Text style={styles.resultsText}>
+      {filteredComponents.length} {filteredComponents.length === 1 ? 'item' : 'items'} found
+    </Text>
+    <TouchableOpacity onPress={handleResetFilters}>
+      <Text style={styles.resetLink}>Reset All</Text>
+    </TouchableOpacity>
+  </Animated.View >
+
+  {/* Scroll To Top Button */ }
+  < Animated.View
+    style={
+      [
+        styles.scrollToTopButton,
+        {
+          opacity: scrollY.interpolate({
+            inputRange: [100, 200],
+            outputRange: [0, 1],
+            extrapolate: 'clamp',
+          }),
+          transform: [{
+            translateY: scrollY.interpolate({
+              inputRange: [100, 200],
+              outputRange: [20, 0],
+              extrapolate: 'clamp',
+            })
+          }]
+        }
+      ]}
+  >
+    <TouchableOpacity
+      style={styles.scrollToTopTouchable}
+      onPress={scrollToTop}
+    >
+      <LinearGradient
+        colors={['#FF00FF', '#9400D3']}
+        style={styles.scrollToTopGradient}
+      >
+        <Ionicons name="arrow-up" size={20} color="#FFF" />
+      </LinearGradient>
+    </TouchableOpacity>
+  </Animated.View >
+
+  {/* Components Grid */ }
+  < FlatList
+    ref={flatListRef}
+    data={filteredComponents}
+    keyExtractor={(item) => item.id
+    }
+    numColumns={2}
+    contentContainerStyle={styles.grid}
+    showsVerticalScrollIndicator={false}
+    onScroll={
+      Animated.event(
+        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+        { useNativeDriver: false }
+      )
+    }
+    scrollEventThrottle={16}
+    renderItem={({ item }) => (
+      <TouchableOpacity
+        style={styles.componentCard}
+        onPress={() => handleComponentPress(item)}
+        activeOpacity={0.8}
+      >
+        <LinearGradient
+          colors={['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)']}
+          style={styles.cardGradient}
+        >
+          {/* Stock Badge */}
+          <View style={styles.stockBadge}>
+            <View style={[
+              styles.stockDot,
+              { backgroundColor: item.stock === 'In stock' ? '#00FF00' : '#FF0000' }
+            ]} />
+            <Text style={styles.stockText}>{item.stock}</Text>
+          </View>
+
+          {/* Component Image/Icon */}
+          <View style={styles.imagePlaceholder}>
+            <Text style={styles.imageText}>
+              {item.type.charAt(0).toUpperCase()}
+            </Text>
+          </View>
+
+          {/* Component Type */}
+          <Text style={styles.componentType}>
+            {item.type.toUpperCase()}
+          </Text>
+
+          {/* Component Name */}
+          <Text style={styles.componentName} numberOfLines={2}>
+            {item.name}
+          </Text>
+
+          {/* Quick Specs Preview */}
+          <View style={styles.specsPreview}>
+            {Object.entries(item.specs)
+              .slice(0, 2)
+              .map(([key, value], index) => (
+                <Text key={index} style={styles.specPreviewText} numberOfLines={1}>
+                  {key}: {String(value)}
                 </Text>
-              </View>
+              ))}
+          </View>
 
-              {/* Component Type */}
-              <Text style={styles.componentType}>
-                {item.type.toUpperCase()}
-              </Text>
+          {/* Component Price */}
+          <Text style={styles.componentPrice}>
+            ₱{item.price.toLocaleString()}
+          </Text>
 
-              {/* Component Name */}
-              <Text style={styles.componentName} numberOfLines={2}>
-                {item.name}
-              </Text>
-
-              {/* Quick Specs Preview */}
-              <View style={styles.specsPreview}>
-                {Object.entries(item.specs)
-                  .slice(0, 2)
-                  .map(([key, value], index) => (
-                    <Text key={index} style={styles.specPreviewText} numberOfLines={1}>
-                      {key}: {String(value)}
-                    </Text>
-                  ))}
-              </View>
-
-              {/* Component Price */}
-              <Text style={styles.componentPrice}>
-                ₱{item.price.toLocaleString()}
-              </Text>
-
-              {/* Action Buttons */}
-              <View style={styles.actionButtons}>
-                <TouchableOpacity
-                  style={styles.compareIconButton}
-                  onPress={() => handleAddToCompare(item)}
-                >
-                  <Ionicons name="git-compare" size={14} color="#00FFFF" />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.viewButton}
-                  onPress={() => handleComponentPress(item)}
-                >
-                  <Text style={styles.viewButtonText}>VIEW</Text>
-                  <Ionicons name="arrow-forward" size={10} color="#00FFFF" />
-                </TouchableOpacity>
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
-        )}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="search-outline" size={64} color="#666" />
-            <Text style={styles.emptyStateText}>
-              No components found
-            </Text>
-            <Text style={styles.emptyStateSubtext}>
-              Try adjusting your filters or search
-            </Text>
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
             <TouchableOpacity
-              style={styles.resetButton}
-              onPress={handleResetFilters}
+              style={styles.compareIconButton}
+              onPress={() => handleAddToCompare(item)}
             >
-              <Text style={styles.resetButtonText}>RESET ALL FILTERS</Text>
+              <Ionicons name="git-compare" size={14} color="#00FFFF" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.viewButton}
+              onPress={() => handleComponentPress(item)}
+            >
+              <Text style={styles.viewButtonText}>VIEW</Text>
+              <Ionicons name="arrow-forward" size={10} color="#00FFFF" />
             </TouchableOpacity>
           </View>
-        }
-      />
+        </LinearGradient>
+      </TouchableOpacity>
+    )}
+    ListEmptyComponent={
+      < View style={styles.emptyState} >
+        <Ionicons name="search-outline" size={64} color="#666" />
+        <Text style={styles.emptyStateText}>
+          No components found
+        </Text>
+        <Text style={styles.emptyStateSubtext}>
+          Try adjusting your filters or search
+        </Text>
+        <TouchableOpacity
+          style={styles.resetButton}
+          onPress={handleResetFilters}
+        >
+          <Text style={styles.resetButtonText}>RESET ALL FILTERS</Text>
+        </TouchableOpacity>
+      </View >
+    }
+  />
 
-      {/* Advanced Filters Modal */}
-      <Modal
-        visible={showFilters}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowFilters(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <LinearGradient
-              colors={['#0a0a0f', '#1a1a2e']}
-              style={styles.modalHeader}
-            >
-              <View style={styles.modalHeaderLeft}>
-                <TouchableOpacity onPress={() => setShowFilters(false)}>
-                  <Ionicons name="close" size={24} color="#FFF" />
-                </TouchableOpacity>
-                <Text style={styles.modalTitle}>Filters</Text>
+  {/* Advanced Filters Modal */ }
+  <Modal
+    visible={showFilters}
+    animationType="slide"
+    transparent={true}
+    onRequestClose={() => setShowFilters(false)}
+  >
+    <View style={styles.modalOverlay}>
+      <View style={styles.modalContent}>
+        <LinearGradient
+          colors={['#0a0a0f', '#1a1a2e']}
+          style={styles.modalHeader}
+        >
+          <View style={styles.modalHeaderLeft}>
+            <TouchableOpacity onPress={() => setShowFilters(false)}>
+              <Ionicons name="close" size={24} color="#FFF" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Filters</Text>
+          </View>
+          <TouchableOpacity onPress={handleResetFilters}>
+            <Text style={styles.resetAllText}>Reset All</Text>
+          </TouchableOpacity>
+        </LinearGradient>
+
+        <ScrollView style={styles.filterContent}>
+          {/* Price Range */}
+          <View style={styles.filterSection}>
+            <Text style={styles.filterSectionTitle}>Price Range</Text>
+            <View style={styles.priceInputs}>
+              <View style={styles.priceInputContainer}>
+                <Text style={styles.priceLabel}>Min:</Text>
+                <TextInput
+                  style={styles.priceInput}
+                  value={priceRange[0].toString()}
+                  onChangeText={(text) => setPriceRange([parseInt(text) || 0, priceRange[1]])}
+                  keyboardType="numeric"
+                  placeholder="0"
+                  placeholderTextColor="#666"
+                />
               </View>
-              <TouchableOpacity onPress={handleResetFilters}>
-                <Text style={styles.resetAllText}>Reset All</Text>
-              </TouchableOpacity>
-            </LinearGradient>
-
-            <ScrollView style={styles.filterContent}>
-              {/* Price Range */}
-              <View style={styles.filterSection}>
-                <Text style={styles.filterSectionTitle}>Price Range</Text>
-                <View style={styles.priceInputs}>
-                  <View style={styles.priceInputContainer}>
-                    <Text style={styles.priceLabel}>Min:</Text>
-                    <TextInput
-                      style={styles.priceInput}
-                      value={priceRange[0].toString()}
-                      onChangeText={(text) => setPriceRange([parseInt(text) || 0, priceRange[1]])}
-                      keyboardType="numeric"
-                      placeholder="0"
-                      placeholderTextColor="#666"
-                    />
-                  </View>
-                  <Text style={styles.priceSeparator}>-</Text>
-                  <View style={styles.priceInputContainer}>
-                    <Text style={styles.priceLabel}>Max:</Text>
-                    <TextInput
-                      style={styles.priceInput}
-                      value={priceRange[1].toString()}
-                      onChangeText={(text) => setPriceRange([priceRange[0], parseInt(text) || 100000])}
-                      keyboardType="numeric"
-                      placeholder="100000"
-                      placeholderTextColor="#666"
-                    />
-                  </View>
-                </View>
+              <Text style={styles.priceSeparator}>-</Text>
+              <View style={styles.priceInputContainer}>
+                <Text style={styles.priceLabel}>Max:</Text>
+                <TextInput
+                  style={styles.priceInput}
+                  value={priceRange[1].toString()}
+                  onChangeText={(text) => setPriceRange([priceRange[0], parseInt(text) || 100000])}
+                  keyboardType="numeric"
+                  placeholder="100000"
+                  placeholderTextColor="#666"
+                />
               </View>
-
-              {/* Stock Filter */}
-              <View style={styles.filterSection}>
-                <Text style={styles.filterSectionTitle}>Availability</Text>
-                <TouchableOpacity
-                  style={styles.checkboxRow}
-                  onPress={() => setInStockOnly(!inStockOnly)}
-                >
-                  <View style={[
-                    styles.checkbox,
-                    inStockOnly && styles.checkboxChecked
-                  ]}>
-                    {inStockOnly && (
-                      <Ionicons name="checkmark" size={16} color="#FFF" />
-                    )}
-                  </View>
-                  <Text style={styles.checkboxLabel}>In Stock Only</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Category-specific Filters */}
-              {selectedCategory !== 'all' && categoryFilters.length > 1 && (
-                <View style={styles.filterSection}>
-                  <Text style={styles.filterSectionTitle}>
-                    {selectedCategory.toUpperCase()} Filters
-                  </Text>
-                  {categoryFilters
-                    .filter(filter => filter.id !== 'inStock')
-                    .map(filter => (
-                      <View key={filter.id} style={styles.filterGroup}>
-                        <Text style={styles.filterGroupLabel}>{filter.label}</Text>
-                        <View style={styles.filterOptions}>
-                          {filter.options?.map(option => (
-                            <TouchableOpacity
-                              key={option}
-                              style={[
-                                styles.filterOption,
-                                filters[filter.id] === option && styles.filterOptionActive
-                              ]}
-                              onPress={() => handleFilterChange(filter.id, option)}
-                            >
-                              <Text style={[
-                                styles.filterOptionText,
-                                filters[filter.id] === option && styles.filterOptionTextActive
-                              ]}>
-                                {option}
-                              </Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-                      </View>
-                    ))}
-                </View>
-              )}
-            </ScrollView>
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.applyButton}
-                onPress={() => setShowFilters(false)}
-              >
-                <LinearGradient
-                  colors={['#FF00FF', '#9400D3']}
-                  style={styles.applyButtonGradient}
-                >
-                  <Text style={styles.applyButtonText}>APPLY FILTERS</Text>
-                </LinearGradient>
-              </TouchableOpacity>
             </View>
           </View>
+
+          {/* Stock Filter */}
+          <View style={styles.filterSection}>
+            <Text style={styles.filterSectionTitle}>Availability</Text>
+            <TouchableOpacity
+              style={styles.checkboxRow}
+              onPress={() => setInStockOnly(!inStockOnly)}
+            >
+              <View style={[
+                styles.checkbox,
+                inStockOnly && styles.checkboxChecked
+              ]}>
+                {inStockOnly && (
+                  <Ionicons name="checkmark" size={16} color="#FFF" />
+                )}
+              </View>
+              <Text style={styles.checkboxLabel}>In Stock Only</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Category-specific Filters */}
+          {selectedCategory !== 'all' && categoryFilters.length > 1 && (
+            <View style={styles.filterSection}>
+              <Text style={styles.filterSectionTitle}>
+                {selectedCategory.toUpperCase()} Filters
+              </Text>
+              {categoryFilters
+                .filter(filter => filter.id !== 'inStock')
+                .map(filter => (
+                  <View key={filter.id} style={styles.filterGroup}>
+                    <Text style={styles.filterGroupLabel}>{filter.label}</Text>
+                    <View style={styles.filterOptions}>
+                      {filter.options?.map(option => (
+                        <TouchableOpacity
+                          key={option}
+                          style={[
+                            styles.filterOption,
+                            filters[filter.id] === option && styles.filterOptionActive
+                          ]}
+                          onPress={() => handleFilterChange(filter.id, option)}
+                        >
+                          <Text style={[
+                            styles.filterOptionText,
+                            filters[filter.id] === option && styles.filterOptionTextActive
+                          ]}>
+                            {option}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                ))}
+            </View>
+          )}
+        </ScrollView>
+
+        <View style={styles.modalActions}>
+          <TouchableOpacity
+            style={styles.applyButton}
+            onPress={() => setShowFilters(false)}
+          >
+            <LinearGradient
+              colors={['#FF00FF', '#9400D3']}
+              style={styles.applyButtonGradient}
+            >
+              <Text style={styles.applyButtonText}>APPLY FILTERS</Text>
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
-      </Modal>
+      </View>
     </View>
+  </Modal>
+    </View >
   );
 }
 
@@ -866,9 +872,9 @@ const styles = StyleSheet.create({
   expandedHeader: {
     paddingHorizontal: spacing.lg,
   },
-  // headerContent: {
-  //   marginBottom: spacing.sm,
-  // },
+  headerContent: {
+    marginBottom: 0,
+  },
   title: {
     fontSize: 24,
     fontWeight: '900',
