@@ -756,6 +756,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingBottom: spacing.xxl + 20,
     marginTop: spacing.lg,
+    marginBottom: spacing.xl,
   },
   prebuiltHeader: {
     marginBottom: spacing.lg,
