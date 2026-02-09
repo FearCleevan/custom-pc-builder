@@ -16,7 +16,7 @@ import {
   View
 } from 'react-native';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface ComponentSelectionModalProps {
   slotType: ProductType | null;
@@ -34,6 +34,14 @@ const typeLabels: Record<ProductType, string> = {
   storage: 'Storage',
   psu: 'Power Supply',
   case: 'Case',
+  monitor: 'Monitor',
+  keyboard: 'Keyboard',
+  mouse: 'Mouse',
+  headphones: 'Headphones',
+  microphone: 'Microphone',
+  speakers: 'Speakers',
+  webcam: 'Webcam',
+  fan: 'Case Fan',
 };
 
 export const ComponentSelectionModal: React.FC<ComponentSelectionModalProps> = ({
@@ -85,10 +93,10 @@ export const ComponentSelectionModal: React.FC<ComponentSelectionModalProps> = (
     setFilteredComponents(filtered);
   }, [searchQuery, priceSort, inStockOnly, components]);
 
-  const handleSelect = (component: Product) => {
-    setSelectedComponent(component);
-    onSelect(component);
-  };
+  // const handleSelect = (component: Product) => {
+  //   setSelectedComponent(component);
+  //   onSelect(component);
+  // };
 
   const handleConfirmRemove = (component: Product) => {
     setComponentToRemove(component);

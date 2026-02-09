@@ -8,6 +8,8 @@ export interface Product {
   has3D?: boolean;
   store?: string;
   stock?: string;
+  stockCount?: number;
+  quantity?: number;
 }
 
 export type ProductType = 
