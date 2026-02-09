@@ -1,11 +1,11 @@
 import { CompatibilityBanner } from "@/components/CompatibilityBanner";
 import { ComponentSelectionModal } from "@/components/ComponentSelectionModal";
-import ConfirmationModal from "@/components/ConfirmationModal/ConfirmationModal"; // Import the confirmation modal
+import ConfirmationModal from "@/components/ConfirmationModal/ConfirmationModal";
 import { PriceSummary } from "@/components/PriceSummary";
 import { allComponents, getPrebuiltSeries } from "@/data/mockData";
 import { checkCompatibility } from "@/logic/compatibility";
 import { useBuildStore } from "@/store/useBuildStore";
-import { spacing } from "@/theme";
+import { THEME } from "@/theme/indexs";
 import { Product, ProductType } from "@/types/product";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -13,7 +13,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
-  Dimensions,
   Image,
   Modal,
   ScrollView,
@@ -23,7 +22,7 @@ import {
   View
 } from "react-native";
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const { colors: COLORS, spacing: SPACING, components: COMPONENTS, shadows: SHADOWS, borderRadius: BORDER_RADIUS } = THEME;
 
 const BUILD_SLOTS = [
   { type: "cpu" as ProductType, label: "CPU", icon: "hardware-chip-outline", maxQuantity: 1 },
@@ -267,8 +266,11 @@ export default function BuildScreen() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header - Compact Design */}
-      <LinearGradient colors={["#000000", "#1a1a2e"]} style={styles.header}>
+      {/* Header */}
+      <LinearGradient 
+        colors={THEME.colors.gradients.dark}
+        style={styles.header}
+      >
         <View style={styles.headerContent}>
           <Text style={styles.title}>Build Your PC</Text>
           <Text style={styles.subtitle}>
@@ -276,13 +278,15 @@ export default function BuildScreen() {
           </Text>
         </View>
 
-        {/* Quick Stats - Compact */}
+        {/* Quick Stats */}
         <View style={styles.statsContainer}>
           <View style={styles.stat}>
-            <Ionicons name="speedometer" size={18} color="#FF00FF" />
+            <View style={[styles.statIcon, { backgroundColor: COMPONENTS.badge.primary.backgroundColor }]}>
+              <Ionicons name="hardware-chip" size={18} color={COMPONENTS.badge.primary.textColor} />
+            </View>
             <View style={styles.statContent}>
               <Text style={styles.statValue}>
-                {Object.values(buildState).filter(Boolean).length}/8
+                {Object.values(buildState).filter(Boolean).length}
               </Text>
               <Text style={styles.statLabel}>Components</Text>
             </View>
@@ -291,22 +295,30 @@ export default function BuildScreen() {
           <View style={styles.statDivider} />
 
           <View style={styles.stat}>
-            <Ionicons
-              name="shield-checkmark"
-              size={18}
-              color={compatibilityIssues.length === 0 ? "#00FF00" : "#FF0000"}
-            />
+            <View style={[
+              styles.statIcon, 
+              { 
+                backgroundColor: compatibilityIssues.length === 0 
+                  ? COMPONENTS.badge.success.backgroundColor 
+                  : COMPONENTS.badge.warning.backgroundColor 
+              }
+            ]}>
+              <Ionicons
+                name={compatibilityIssues.length === 0 ? "checkmark-shield" : "warning"}
+                size={18}
+                color={compatibilityIssues.length === 0 ? COMPONENTS.badge.success.textColor : COMPONENTS.badge.warning.textColor}
+              />
+            </View>
             <View style={styles.statContent}>
               <Text
                 style={[
                   styles.statValue,
                   {
-                    color:
-                      compatibilityIssues.length === 0 ? "#00FF00" : "#FF0000",
+                    color: compatibilityIssues.length === 0 ? COMPONENTS.badge.success.textColor : COMPONENTS.badge.warning.textColor,
                   },
                 ]}
               >
-                {compatibilityIssues.length === 0 ? "✓" : "⚠"}
+                {compatibilityIssues.length === 0 ? "All Good" : `${compatibilityIssues.length} Issues`}
               </Text>
               <Text style={styles.statLabel}>Compatibility</Text>
             </View>
@@ -316,12 +328,14 @@ export default function BuildScreen() {
 
       <CompatibilityBanner issues={compatibilityIssues} />
 
-      {/* Build Slots - Compact */}
+      {/* Build Slots */}
       <View style={styles.slotsContainer}>
-        <Text style={styles.sectionTitle}>Components Selection</Text>
-        <Text style={styles.sectionSubtitle}>
-          Add components to build your perfect PC
-        </Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Components Selection</Text>
+          <Text style={styles.sectionSubtitle}>
+            Add components to build your perfect PC
+          </Text>
+        </View>
 
         {BUILD_SLOTS.map((slot) => {
           const product = getProductForSlot(slot.type);
@@ -339,13 +353,15 @@ export default function BuildScreen() {
                 activeOpacity={0.8}
               >
                 <View style={styles.slotHeaderLeft}>
-                  <View style={styles.slotIconContainer}>
+                  <View style={[
+                    styles.slotIconContainer,
+                    product && styles.slotIconContainerSelected
+                  ]}>
                     <Ionicons
                       name={slot.icon as any}
-                      size={18}
-                      color={product ? "#FF00FF" : "#666"}
+                      size={20}
+                      color={product ? COLORS.primary : COLORS.text.tertiary}
                     />
-                    {product && <View style={styles.slotSelectedGlow} />}
                   </View>
                   <Text style={styles.slotTitle}>{slot.label}</Text>
                 </View>
@@ -353,13 +369,18 @@ export default function BuildScreen() {
                 <View style={styles.slotHeaderRight}>
                   {product ? (
                     <>
-                      <View style={styles.selectedBadge}>
-                        <Text style={styles.selectedBadgeText}>SELECTED</Text>
+                      <View style={[styles.selectedBadge, { 
+                        backgroundColor: COMPONENTS.badge.primary.backgroundColor,
+                        borderColor: COMPONENTS.badge.primary.borderColor
+                      }]}>
+                        <Text style={[styles.selectedBadgeText, { 
+                          color: COMPONENTS.badge.primary.textColor 
+                        }]}>SELECTED</Text>
                       </View>
                       <Ionicons
                         name={isExpanded ? "chevron-up" : "chevron-down"}
-                        size={18}
-                        color="#FF00FF"
+                        size={20}
+                        color={COLORS.text.secondary}
                       />
                     </>
                   ) : (
@@ -367,7 +388,7 @@ export default function BuildScreen() {
                       style={styles.addButton}
                       onPress={() => handleAddPart(slot.type)}
                     >
-                      <Ionicons name="add-circle" size={16} color="#00FFFF" />
+                      <Ionicons name="add" size={18} color={COLORS.primary} />
                       <Text style={styles.addButtonText}>Add</Text>
                     </TouchableOpacity>
                   )}
@@ -388,9 +409,11 @@ export default function BuildScreen() {
                             resizeMode="cover"
                           />
                         ) : (
-                          <Text style={styles.componentImageText}>
-                            {slot.type.charAt(0).toUpperCase()}
-                          </Text>
+                          <Ionicons 
+                            name={slot.icon as any} 
+                            size={24} 
+                            color={COLORS.text.tertiary} 
+                          />
                         )}
                       </View>
 
@@ -407,7 +430,7 @@ export default function BuildScreen() {
                               onPress={() => handleQuantityChange(slot.type, -1)}
                               disabled={(product as any).quantity <= 1}
                             >
-                              <Ionicons name="remove" size={14} color="#FFF" />
+                              <Ionicons name="remove" size={14} color={COLORS.text.primary} />
                             </TouchableOpacity>
 
                             <Text style={styles.quantityText}>
@@ -419,7 +442,7 @@ export default function BuildScreen() {
                               onPress={() => handleQuantityChange(slot.type, 1)}
                               disabled={((product as any).quantity || 1) >= maxQuantity}
                             >
-                              <Ionicons name="add" size={14} color="#FFF" />
+                              <Ionicons name="add" size={14} color={COLORS.text.primary} />
                             </TouchableOpacity>
                           </View>
                         )}
@@ -432,24 +455,27 @@ export default function BuildScreen() {
                           styles.stockBadge,
                           {
                             backgroundColor: product.stock === "In stock"
-                              ? "rgba(0, 255, 0, 0.1)"
-                              : "rgba(255, 0, 0, 0.1)",
+                              ? COMPONENTS.badge.success.backgroundColor
+                              : COMPONENTS.badge.danger.backgroundColor,
+                            borderColor: product.stock === "In stock"
+                              ? COMPONENTS.badge.success.borderColor
+                              : COMPONENTS.badge.danger.borderColor,
                           },
                         ]}>
                           <View style={[
                             styles.stockDot,
                             {
                               backgroundColor: product.stock === "In stock"
-                                ? "#00FF00"
-                                : "#FF0000",
+                                ? COMPONENTS.badge.success.textColor
+                                : COMPONENTS.badge.danger.textColor,
                             },
                           ]} />
                           <Text style={[
                             styles.stockText,
                             {
                               color: product.stock === "In stock"
-                                ? "#00FF00"
-                                : "#FF0000",
+                                ? COMPONENTS.badge.success.textColor
+                                : COMPONENTS.badge.danger.textColor,
                             },
                           ]}>
                             {product.stock}
@@ -460,29 +486,37 @@ export default function BuildScreen() {
 
                     {/* Action Buttons */}
                     <View style={styles.componentActions}>
-                      {/* Change Component Button */}
                       <TouchableOpacity
-                        style={styles.changeButton}
+                        style={[styles.changeButton, { 
+                          backgroundColor: COMPONENTS.badge.primary.backgroundColor,
+                          borderColor: COMPONENTS.badge.primary.borderColor
+                        }]}
                         onPress={() => handleAddPart(slot.type)}
                       >
-                        <Ionicons name="swap-horizontal" size={14} color="#FF00FF" />
-                        <Text style={styles.changeButtonText}>Change</Text>
+                        <Ionicons name="swap-horizontal" size={14} color={COMPONENTS.badge.primary.textColor} />
+                        <Text style={[styles.changeButtonText, { color: COMPONENTS.badge.primary.textColor }]}>Change</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
-                        style={styles.viewDetailsButton}
+                        style={[styles.viewDetailsButton, { 
+                          backgroundColor: COMPONENTS.badge.secondary.backgroundColor,
+                          borderColor: COMPONENTS.badge.secondary.borderColor
+                        }]}
                         onPress={() => handleViewComponentDetails(product)}
                       >
-                        <Text style={styles.viewDetailsText}>Details</Text>
-                        <Ionicons name="arrow-forward" size={14} color="#00FFFF" />
+                        <Text style={[styles.viewDetailsText, { color: COMPONENTS.badge.secondary.textColor }]}>Details</Text>
+                        <Ionicons name="arrow-forward" size={14} color={COMPONENTS.badge.secondary.textColor} />
                       </TouchableOpacity>
 
                       <TouchableOpacity
-                        style={styles.removeButton}
+                        style={[styles.removeButton, { 
+                          backgroundColor: COMPONENTS.badge.danger.backgroundColor,
+                          borderColor: COMPONENTS.badge.danger.borderColor
+                        }]}
                         onPress={() => handleRemovePart(slot.type)}
                       >
-                        <Ionicons name="trash-outline" size={14} color="#FF0000" />
-                        <Text style={styles.removeButtonText}>Remove</Text>
+                        <Ionicons name="trash-outline" size={14} color={COMPONENTS.badge.danger.textColor} />
+                        <Text style={[styles.removeButtonText, { color: COMPONENTS.badge.danger.textColor }]}>Remove</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -503,8 +537,10 @@ export default function BuildScreen() {
           activeOpacity={0.8}
         >
           <LinearGradient
-            colors={["#FF00FF", "#9400D3"]}
+            colors={THEME.colors.gradients.primary}
             style={styles.buttonGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
           >
             <Ionicons name="save" size={20} color="#FFF" />
             <Text style={styles.primaryButtonText}>SAVE BUILD</Text>
@@ -512,7 +548,7 @@ export default function BuildScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.secondaryButton}
+          style={[styles.secondaryButton, { borderColor: COMPONENTS.button.danger.borderColor }]}
           onPress={() => {
             const hasBuild = Object.values(buildState).some(
               (product) => product !== null,
@@ -542,19 +578,16 @@ export default function BuildScreen() {
           }}
           activeOpacity={0.8}
         >
-          <LinearGradient
-            colors={["rgba(255,255,255,0.1)", "rgba(255,255,255,0.05)"]}
-            style={styles.secondaryButtonGradient}
-          >
-            <Ionicons name="trash" size={18} color="#FF0000" />
-            <Text style={styles.secondaryButtonText}>CLEAR BUILD</Text>
-          </LinearGradient>
+          <View style={[styles.secondaryButtonInner, { backgroundColor: COMPONENTS.button.secondary.backgroundColor }]}>
+            <Ionicons name="trash" size={18} color={COMPONENTS.button.danger.textColor} />
+            <Text style={[styles.secondaryButtonText, { color: COMPONENTS.button.danger.textColor }]}>CLEAR BUILD</Text>
+          </View>
         </TouchableOpacity>
       </View>
 
       {/* Browse Pre-Built Series Section */}
       <View style={styles.prebuiltSection}>
-        <View style={styles.prebuiltHeader}>
+        <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Need Inspiration?</Text>
           <Text style={styles.sectionSubtitle}>
             Start with a professionally configured build
@@ -562,54 +595,48 @@ export default function BuildScreen() {
         </View>
 
         <TouchableOpacity
-          style={styles.prebuiltCard}
+          style={[styles.prebuiltCard, { 
+            backgroundColor: COMPONENTS.card.default.backgroundColor,
+            borderColor: COMPONENTS.card.default.borderColor
+          }]}
           onPress={() => router.push("/prebuilt-series")}
           activeOpacity={0.8}
         >
-          <LinearGradient
-            colors={["rgba(0, 255, 255, 0.1)", "rgba(0, 255, 255, 0.05)"]}
-            style={styles.prebuiltCardGradient}
-          >
-            <View style={styles.prebuiltCardContent}>
-              <View style={styles.prebuiltIconContainer}>
-                <Ionicons name="cube" size={28} color="#00FFFF" />
-                <View style={styles.prebuiltIconGlow} />
+          <View style={styles.prebuiltCardContent}>
+            <View style={styles.prebuiltIconContainer}>
+              <View style={[styles.prebuiltIconWrapper, { backgroundColor: COMPONENTS.badge.secondary.backgroundColor }]}>
+                <Ionicons name="cube" size={28} color={COMPONENTS.badge.secondary.textColor} />
               </View>
-
-              <View style={styles.prebuiltInfo}>
-                <Text style={styles.prebuiltTitle}>
-                  BROWSE PRE-BUILT SERIES
-                </Text>
-                <Text style={styles.prebuiltDescription}>
-                  Explore curated builds for gaming, workstations, and industrial applications
-                </Text>
-
-                <View style={styles.prebuiltTags}>
-                  <View style={styles.tag}>
-                    <Text style={styles.tagText}>Gaming PC</Text>
-                  </View>
-                  <View style={styles.tag}>
-                    <Text style={styles.tagText}>Workstation</Text>
-                  </View>
-                  <View style={styles.tag}>
-                    <Text style={styles.tagText}>Industrial</Text>
-                  </View>
-                </View>
-              </View>
-
-              <Ionicons name="arrow-forward-circle" size={28} color="#00FFFF" />
             </View>
 
-            <LinearGradient
-              colors={["#00FFFF", "#008B8B"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.exploreButton}
-            >
-              <Text style={styles.exploreButtonText}>EXPLORE SERIES</Text>
-              <Ionicons name="rocket" size={14} color="#FFF" />
-            </LinearGradient>
-          </LinearGradient>
+            <View style={styles.prebuiltInfo}>
+              <Text style={[styles.prebuiltTitle, { color: COMPONENTS.badge.secondary.textColor }]}>
+                BROWSE PRE-BUILT SERIES
+              </Text>
+              <Text style={styles.prebuiltDescription}>
+                Explore curated builds for gaming, workstations, and industrial applications
+              </Text>
+
+              <View style={styles.prebuiltTags}>
+                <View style={[styles.tag, { backgroundColor: COMPONENTS.badge.primary.backgroundColor }]}>
+                  <Text style={[styles.tagText, { color: COMPONENTS.badge.primary.textColor }]}>Gaming PC</Text>
+                </View>
+                <View style={[styles.tag, { backgroundColor: COMPONENTS.badge.info.backgroundColor }]}>
+                  <Text style={[styles.tagText, { color: COMPONENTS.badge.info.textColor }]}>Workstation</Text>
+                </View>
+                <View style={[styles.tag, { backgroundColor: COMPONENTS.badge.success.backgroundColor }]}>
+                  <Text style={[styles.tagText, { color: COMPONENTS.badge.success.textColor }]}>Industrial</Text>
+                </View>
+              </View>
+            </View>
+
+            <Ionicons name="chevron-forward" size={24} color={COLORS.text.tertiary} />
+          </View>
+
+          <View style={[styles.exploreButton, { backgroundColor: COMPONENTS.button.primary.backgroundColor }]}>
+            <Text style={styles.exploreButtonText}>EXPLORE SERIES</Text>
+            <Ionicons name="rocket" size={14} color="#FFF" />
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -648,13 +675,13 @@ export default function BuildScreen() {
         onCancel={() => setConfirmationModal(prev => ({ ...prev, visible: false }))}
         destructive={confirmationModal.destructive}
         customContent={confirmationModal.slotType ? (
-          <View style={{ alignItems: 'center', padding: spacing.sm }}>
+          <View style={{ alignItems: 'center', padding: SPACING.sm }}>
             <Ionicons 
               name={BUILD_SLOTS.find(s => s.type === confirmationModal.slotType)?.icon as any} 
               size={20} 
-              color="#FF00FF" 
+              color={COLORS.primary} 
             />
-            <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 4 }}>
+            <Text style={{ color: COLORS.text.tertiary, fontSize: 12, marginTop: 4 }}>
               Slot: {BUILD_SLOTS.find(s => s.type === confirmationModal.slotType)?.label}
             </Text>
           </View>
@@ -663,436 +690,415 @@ export default function BuildScreen() {
     </ScrollView>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0a0a0f",
+    backgroundColor: COLORS.background,
   },
   header: {
-    padding: spacing.lg,
-    paddingTop: spacing.xl + 10,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    padding: SPACING.lg,
+    paddingTop: SPACING.xl + 10,
+    borderBottomLeftRadius: BORDER_RADIUS["2xl"],
+    borderBottomRightRadius: BORDER_RADIUS["2xl"],
   },
   headerContent: {
-    marginBottom: spacing.lg,
+    marginBottom: SPACING.lg,
   },
   title: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#FFF",
-    marginBottom: 4,
+    fontSize: THEME.typography.fontSizes["4xl"],
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.text.primary,
+    marginBottom: SPACING.xs,
+    letterSpacing: THEME.typography.letterSpacing.tight,
   },
   subtitle: {
-    fontSize: 12,
-    color: "rgba(255,255,255,0.6)",
+    fontSize: THEME.typography.fontSizes.md,
+    color: COLORS.text.secondary,
+    fontWeight: THEME.typography.fontWeights.normal,
   },
   statsContainer: {
     flexDirection: "row",
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: 12,
-    padding: spacing.md,
-    marginTop: spacing.md,
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
+    marginTop: SPACING.md,
   },
   stat: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: SPACING.md,
+  },
+  statIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: BORDER_RADIUS.md,
+    alignItems: "center",
+    justifyContent: "center",
   },
   statContent: {
     flex: 1,
   },
   statValue: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#FF00FF",
-    marginBottom: 2,
+    fontSize: THEME.typography.fontSizes.xl,
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.text.primary,
+    marginBottom: SPACING.xs,
   },
   statLabel: {
-    fontSize: 10,
-    color: "rgba(255,255,255,0.5)",
+    fontSize: THEME.typography.fontSizes.sm,
+    color: COLORS.text.tertiary,
+    fontWeight: THEME.typography.fontWeights.medium,
   },
   statDivider: {
     width: 1,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    marginHorizontal: spacing.sm,
+    backgroundColor: COLORS.border,
+    marginHorizontal: SPACING.sm,
   },
   slotsContainer: {
-    padding: spacing.md,
+    padding: SPACING.lg,
+  },
+  sectionHeader: {
+    marginBottom: SPACING.lg,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#FFF",
-    marginBottom: 4,
+    fontSize: THEME.typography.fontSizes["2xl"],
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.text.primary,
+    marginBottom: SPACING.xs,
   },
   sectionSubtitle: {
-    fontSize: 12,
-    color: "rgba(255,255,255,0.5)",
-    marginBottom: spacing.lg,
+    fontSize: THEME.typography.fontSizes.md,
+    color: COLORS.text.secondary,
+    fontWeight: THEME.typography.fontWeights.normal,
   },
   slotWrapper: {
-    marginBottom: spacing.sm,
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: 12,
+    marginBottom: SPACING.sm,
+    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.lg,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: COLORS.border,
   },
   slotHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: spacing.md,
-    backgroundColor: "rgba(255,255,255,0.02)",
+    padding: SPACING.md,
+    backgroundColor: COLORS.surface,
   },
   slotHeaderExpanded: {
-    backgroundColor: "rgba(255, 0, 255, 0.05)",
+    backgroundColor: COLORS.surfaceElevated,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 0, 255, 0.2)",
+    borderBottomColor: COLORS.border,
   },
   slotHeaderLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.sm,
+    gap: SPACING.md,
     flex: 1,
   },
   slotIconContainer: {
-    position: "relative",
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    width: 44,
+    height: 44,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.surfaceLight,
     alignItems: "center",
     justifyContent: "center",
   },
-  slotSelectedGlow: {
-    position: "absolute",
-    top: -4,
-    left: -4,
-    right: -4,
-    bottom: -4,
-    backgroundColor: "#FF00FF",
-    opacity: 0.15,
-    borderRadius: 14,
+  slotIconContainerSelected: {
+    backgroundColor: COLORS.primary + '15',
+    borderWidth: 1,
+    borderColor: COLORS.primary + '30',
   },
   slotTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#FFF",
+    fontSize: THEME.typography.fontSizes.lg,
+    fontWeight: THEME.typography.fontWeights.semibold,
+    color: COLORS.text.primary,
     flex: 1,
   },
   slotHeaderRight: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.sm,
+    gap: SPACING.sm,
   },
   selectedBadge: {
-    backgroundColor: "rgba(255, 0, 255, 0.15)",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
+    borderWidth: 1,
   },
   selectedBadgeText: {
-    fontSize: 9,
-    fontWeight: "800",
-    color: "#FF00FF",
-    letterSpacing: 0.5,
+    fontSize: THEME.typography.fontSizes.xs,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   addButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(0, 255, 255, 0.1)",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-    gap: 4,
+    backgroundColor: COLORS.surfaceLight,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
+    gap: SPACING.xs,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   addButtonText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#00FFFF",
+    fontSize: THEME.typography.fontSizes.md,
+    fontWeight: THEME.typography.fontWeights.semibold,
+    color: COLORS.primary,
   },
   slotContent: {
-    padding: spacing.md,
+    padding: SPACING.md,
+    backgroundColor: COLORS.surfaceElevated,
   },
   selectedComponent: {
-    backgroundColor: "rgba(255,255,255,0.03)",
-    borderRadius: 10,
-    padding: spacing.md,
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
+    borderColor: COLORS.borderLight,
   },
   componentImageContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: SPACING.md,
   },
   componentImagePlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    width: 64,
+    height: 64,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: COLORS.surface,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: spacing.md,
+    marginRight: SPACING.md,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   componentImage: {
     width: '100%',
     height: '100%',
   },
-  componentImageText: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: "rgba(255,255,255,0.2)",
-  },
   componentInfo: {
     flex: 1,
   },
   componentName: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#FFF",
-    marginBottom: 6,
-    lineHeight: 18,
+    fontSize: THEME.typography.fontSizes.md,
+    fontWeight: THEME.typography.fontWeights.semibold,
+    color: COLORS.text.primary,
+    marginBottom: SPACING.xs,
+    lineHeight: THEME.typography.lineHeights.normal * THEME.typography.fontSizes.md,
   },
   quantitySelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: SPACING.xs,
   },
   quantityButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    width: 28,
+    height: 28,
+    borderRadius: BORDER_RADIUS.full,
+    backgroundColor: COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   quantityText: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.8)',
-    marginHorizontal: 8,
-    fontWeight: '600',
+    fontSize: THEME.typography.fontSizes.sm,
+    color: COLORS.text.secondary,
+    marginHorizontal: SPACING.sm,
+    fontWeight: THEME.typography.fontWeights.semibold,
   },
   componentPrice: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#FF00FF",
-    marginBottom: 6,
+    fontSize: THEME.typography.fontSizes.xl,
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.primary,
+    marginBottom: SPACING.xs,
   },
   stockBadge: {
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.full,
+    borderWidth: 1,
   },
   stockDot: {
     width: 6,
     height: 6,
-    borderRadius: 3,
-    marginRight: 6,
+    borderRadius: BORDER_RADIUS.full,
+    marginRight: SPACING.xs,
   },
   stockText: {
-    fontSize: 10,
-    fontWeight: "600",
+    fontSize: THEME.typography.fontSizes.xs,
+    fontWeight: THEME.typography.fontWeights.semibold,
   },
   componentActions: {
     flexDirection: "row",
-    gap: spacing.sm,
+    gap: SPACING.sm,
+    marginTop: SPACING.sm,
   },
   changeButton: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255, 0, 255, 0.1)",
-    paddingVertical: 10,
-    borderRadius: 6,
-    gap: 6,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+    gap: SPACING.xs,
     borderWidth: 1,
-    borderColor: "rgba(255, 0, 255, 0.2)",
   },
   changeButtonText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#FF00FF",
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.semibold,
   },
   viewDetailsButton: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0, 255, 255, 0.1)",
-    paddingVertical: 10,
-    borderRadius: 6,
-    gap: 6,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+    gap: SPACING.xs,
     borderWidth: 1,
-    borderColor: "rgba(0, 255, 255, 0.2)",
   },
   viewDetailsText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#00FFFF",
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.semibold,
   },
   removeButton: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255, 0, 0, 0.1)",
-    paddingVertical: 10,
-    borderRadius: 6,
-    gap: 6,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+    gap: SPACING.xs,
     borderWidth: 1,
-    borderColor: "rgba(255, 0, 0, 0.2)",
   },
   removeButtonText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#FF0000",
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.semibold,
   },
   actionsContainer: {
-    padding: spacing.md,
-    gap: spacing.sm,
-    paddingBottom: spacing.lg,
+    padding: SPACING.lg,
+    gap: SPACING.md,
+    paddingBottom: SPACING.lg,
   },
   primaryButton: {
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     overflow: "hidden",
-    shadowColor: "#FF00FF",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    ...SHADOWS.primary,
   },
   buttonGradient: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: SPACING.sm,
   },
   primaryButtonText: {
-    color: "#FFF",
-    fontSize: 16,
-    fontWeight: "800",
-    letterSpacing: 0.5,
+    color: COLORS.white,
+    fontSize: THEME.typography.fontSizes.lg,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   secondaryButton: {
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(255, 0, 0, 0.2)",
   },
-  secondaryButtonGradient: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+  secondaryButtonInner: {
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: SPACING.sm,
   },
   secondaryButtonText: {
-    color: "#FF0000",
-    fontSize: 14,
-    fontWeight: "800",
-    letterSpacing: 0.5,
+    fontSize: THEME.typography.fontSizes.md,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   // Pre-built Series Section
   prebuiltSection: {
-    padding: spacing.md,
-    paddingBottom: spacing.xl,
-    marginTop: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  prebuiltHeader: {
-    marginBottom: spacing.md,
+    padding: SPACING.lg,
+    paddingBottom: SPACING.xl,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.lg,
   },
   prebuiltCard: {
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(0, 255, 255, 0.2)",
-    shadowColor: "#00FFFF",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  prebuiltCardGradient: {
-    padding: spacing.md,
+    ...SHADOWS.md,
   },
   prebuiltCardContent: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: spacing.md,
+    padding: SPACING.lg,
+    paddingBottom: SPACING.md,
   },
   prebuiltIconContainer: {
-    position: "relative",
-    marginRight: spacing.md,
+    marginRight: SPACING.md,
   },
-  prebuiltIconGlow: {
-    position: "absolute",
-    top: -8,
-    left: -8,
-    right: -8,
-    bottom: -8,
-    backgroundColor: "#00FFFF",
-    opacity: 0.15,
-    borderRadius: 20,
+  prebuiltIconWrapper: {
+    width: 56,
+    height: 56,
+    borderRadius: BORDER_RADIUS.lg,
+    alignItems: "center",
+    justifyContent: "center",
   },
   prebuiltInfo: {
     flex: 1,
   },
   prebuiltTitle: {
-    fontSize: 14,
-    fontWeight: "800",
-    color: "#00FFFF",
-    marginBottom: 4,
-    letterSpacing: 0.5,
+    fontSize: THEME.typography.fontSizes.md,
+    fontWeight: THEME.typography.fontWeights.bold,
+    marginBottom: SPACING.xs,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   prebuiltDescription: {
-    fontSize: 12,
-    color: "rgba(255,255,255,0.6)",
-    marginBottom: spacing.sm,
-    lineHeight: 16,
+    fontSize: THEME.typography.fontSizes.sm,
+    color: COLORS.text.secondary,
+    marginBottom: SPACING.sm,
+    lineHeight: THEME.typography.lineHeights.normal * THEME.typography.fontSizes.sm,
   },
   prebuiltTags: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 6,
+    gap: SPACING.xs,
   },
   tag: {
-    backgroundColor: "rgba(0, 255, 255, 0.08)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.full,
     borderWidth: 1,
-    borderColor: "rgba(0, 255, 255, 0.15)",
+    borderColor: 'transparent',
   },
   tagText: {
-    fontSize: 10,
-    color: "#00FFFF",
-    fontWeight: "600",
+    fontSize: THEME.typography.fontSizes.xs,
+    fontWeight: THEME.typography.fontWeights.semibold,
+    letterSpacing: THEME.typography.letterSpacing.normal,
   },
   exploreButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: spacing.md,
-    borderRadius: 10,
-    gap: 6,
+    paddingVertical: SPACING.md,
+    gap: SPACING.xs,
   },
   exploreButtonText: {
-    color: "#FFF",
-    fontSize: 14,
-    fontWeight: "800",
-    letterSpacing: 0.5,
+    color: COLORS.white,
+    fontSize: THEME.typography.fontSizes.md,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
 });

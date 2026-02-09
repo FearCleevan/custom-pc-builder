@@ -1,4 +1,4 @@
-import { spacing } from '@/theme';
+import { THEME } from '@/theme/indexs';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -11,6 +11,7 @@ import Animated, {
   useSharedValue
 } from 'react-native-reanimated';
 
+const { colors: COLORS, spacing: SPACING, borderRadius: BORDER_RADIUS, shadows: SHADOWS } = THEME;
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Gaming PC categories
@@ -21,8 +22,8 @@ const GAMING_PC_CATEGORIES = [
     description: '4K Gaming & Streaming',
     fps: '240+ FPS',
     price: '$3,499',
-    color: '#FF00FF',
-    gradient: ['#FF00FF', '#9400D3'] as const,
+    color: COLORS.primary,
+    gradient: THEME.colors.gradients.primary as [string, string],
     specs: 'RTX 4090 | i9-14900K | 64GB DDR5'
   },
   {
@@ -31,8 +32,8 @@ const GAMING_PC_CATEGORIES = [
     description: 'Ultra Performance',
     fps: '360+ FPS',
     price: '$4,999',
-    color: '#00FFFF',
-    gradient: ['#00FFFF', '#008B8B'] as const,
+    color: COLORS.secondary,
+    gradient: THEME.colors.gradients.secondary as [string, string],
     specs: 'RTX 4090 Ti | Ryzen 9 7950X3D | 128GB DDR5'
   },
   {
@@ -41,8 +42,8 @@ const GAMING_PC_CATEGORIES = [
     description: 'Competitive Esports',
     fps: '500+ FPS',
     price: '$2,799',
-    color: '#00FF00',
-    gradient: ['#00FF00', '#006400'] as const,
+    color: COLORS.success,
+    gradient: THEME.colors.gradients.success as [string, string],
     specs: 'RTX 4080 Super | i7-14700K | 32GB DDR5'
   },
   {
@@ -51,8 +52,8 @@ const GAMING_PC_CATEGORIES = [
     description: 'AI & Content Creation',
     fps: '165+ FPS',
     price: '$3,999',
-    color: '#FFFF00',
-    gradient: ['#FFFF00', '#FF8C00'] as const,
+    color: COLORS.warning,
+    gradient: THEME.colors.gradients.warning as [string, string],
     specs: 'RTX 4090 | Threadripper | 128GB DDR5'
   }
 ];
@@ -71,14 +72,11 @@ const GamingPCCard = ({ category, onPress }: { category: typeof GAMING_PC_CATEGO
         end={{ x: 1, y: 1 }}
         style={styles.gamingCardGradient}
       >
-        {/* Glow effect */}
-        <View style={[styles.cardGlow, { backgroundColor: category.color }]} />
-
         <View style={styles.gamingCardContent}>
           <View style={styles.gamingCardHeader}>
             <Text style={styles.gamingCardName}>{category.name}</Text>
-            <View style={[styles.fpsBadge, { backgroundColor: `${category.color}40` }]}>
-              <Text style={[styles.fpsText, { color: category.color }]}>
+            <View style={[styles.fpsBadge, { backgroundColor: THEME.components.badge.primary.backgroundColor }]}>
+              <Text style={[styles.fpsText, { color: THEME.components.badge.primary.textColor }]}>
                 {category.fps}
               </Text>
             </View>
@@ -96,7 +94,7 @@ const GamingPCCard = ({ category, onPress }: { category: typeof GAMING_PC_CATEGO
             <Text style={styles.gamingCardPrice}>
               {category.price}
             </Text>
-            <View style={[styles.exploreButton, { backgroundColor: `${category.color}40` }]}>
+            <View style={[styles.exploreButton, { backgroundColor: category.color + '20' }]}>
               <Text style={[styles.exploreButtonText, { color: category.color }]}>
                 EXPLORE
               </Text>
@@ -149,7 +147,7 @@ export default function HomeScreen() {
     const scale = interpolate(
       scrollY.value,
       [0, 100],
-      [1, 1.05],
+      [1, 1.02],
       Extrapolate.CLAMP
     );
 
@@ -170,21 +168,15 @@ export default function HomeScreen() {
       {/* Hero Banner */}
       <Animated.View style={[styles.heroBanner, bannerAnimatedStyle]}>
         <LinearGradient
-          colors={['#000000', '#1a1a2e', '#16213e']}
+          colors={THEME.colors.gradients.dark}
           style={styles.heroGradient}
         >
-          {/* Neon Grid Overlay */}
-          <View style={styles.neonGrid} />
-
           {/* Hero Content */}
           <View style={styles.heroContent}>
             <View style={styles.badgeContainer}>
-              <LinearGradient
-                colors={['#FF00FF', '#9400D3']}
-                style={styles.badge}
-              >
+              <View style={styles.badge}>
                 <Text style={styles.badgeText}>NEW GENERATION</Text>
-              </LinearGradient>
+              </View>
             </View>
 
             <Text style={styles.heroTitle}>
@@ -226,17 +218,16 @@ export default function HomeScreen() {
             activeOpacity={0.8}
           >
             <LinearGradient
-              colors={['#FF00FF', '#9400D3']}
+              colors={THEME.colors.gradients.primary}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.buttonGradient}
             >
               <Text style={styles.primaryButtonText}>
-                <Ionicons name="construct" size={24} color="#FFF" />
+                <Ionicons name="construct" size={20} color="#FFF" />
                 {"  "}
                 START BUILDING
               </Text>
-              <View style={styles.buttonGlow} />
             </LinearGradient>
           </TouchableOpacity>
 
@@ -245,16 +236,13 @@ export default function HomeScreen() {
             onPress={handleBrowseAll}
             activeOpacity={0.8}
           >
-            <LinearGradient
-              colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
-              style={styles.secondaryButtonGradient}
-            >
+            <View style={styles.secondaryButtonInner}>
               <Text style={styles.secondaryButtonText}>
-                <Ionicons name="grid" size={20} color="#00FFFF" />
+                <Ionicons name="grid" size={18} color={COLORS.secondary} />
                 {"  "}
                 BROWSE ALL COMPONENTS
               </Text>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
       </Animated.View>
@@ -262,12 +250,9 @@ export default function HomeScreen() {
       {/* Quick Start Section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <LinearGradient
-            colors={['#FF00FF', '#00FFFF']}
-            style={styles.sectionTitleGradient}
-          >
+          <View style={styles.sectionTitleContainer}>
             <Text style={styles.sectionTitle}>QUICK START</Text>
-          </LinearGradient>
+          </View>
           <Text style={styles.sectionSubtitle}>
             Browse our curated gaming PC builds
           </Text>
@@ -294,13 +279,9 @@ export default function HomeScreen() {
             onPress={handleCustomBuild}
             activeOpacity={0.8}
           >
-            <LinearGradient
-              colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
-              style={styles.buildYourOwnGradient}
-            >
+            <View style={styles.buildYourOwnInner}>
               <View style={styles.buildYourOwnIcon}>
-                <Ionicons name="add-circle" size={64} color="#00FFFF" />
-                <View style={styles.buildYourOwnGlow} />
+                <Ionicons name="add-circle" size={48} color={COLORS.secondary} />
               </View>
               <Text style={styles.buildYourOwnTitle}>
                 BUILD-YOUR-OWN
@@ -313,7 +294,7 @@ export default function HomeScreen() {
                   START CUSTOM
                 </Text>
               </View>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -321,12 +302,9 @@ export default function HomeScreen() {
       {/* Industrial PC Section */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <LinearGradient
-            colors={['#00FFFF', '#00FF00']}
-            style={styles.sectionTitleGradient}
-          >
+          <View style={styles.sectionTitleContainer}>
             <Text style={styles.sectionTitle}>INDUSTRIAL PC</Text>
-          </LinearGradient>
+          </View>
           <Text style={styles.sectionSubtitle}>
             High-performance workstations for professionals
           </Text>
@@ -335,53 +313,46 @@ export default function HomeScreen() {
         <TouchableOpacity
           style={styles.industrialCard}
           activeOpacity={0.8}
+          onPress={handleIndustrialSolutions}
         >
-          <LinearGradient
-            colors={['rgba(0, 255, 255, 0.1)', 'rgba(0, 255, 255, 0.05)']}
-            style={styles.industrialGradient}
-          >
-            <View style={styles.industrialContent}>
-              <View style={styles.industrialBadge}>
-                <Text style={styles.industrialBadgeText}>ENTERPRISE</Text>
-              </View>
-              <Text style={styles.industrialTitle}>
-                RENDER & SIMULATION WORKSTATIONS
-              </Text>
-              <Text style={styles.industrialDescription}>
-                Dual RTX 6000 Ada | Threadripper Pro | 256GB ECC RAM{"\n"}
-                Built for 3D rendering, AI training, and scientific computing
-              </Text>
-              <View style={styles.industrialSpecs}>
-                <View style={styles.specItem}>
-                  <Ionicons name="hardware-chip" size={20} color="#00FFFF" />
-                  <Text style={styles.specText}>Dual GPU Support</Text>
-                </View>
-                <View style={styles.specItem}>
-                  <Ionicons name="server" size={20} color="#00FFFF" />
-                  <Text style={styles.specText}>ECC Memory</Text>
-                </View>
-                <View style={styles.specItem}>
-                  <Ionicons name="shield-checkmark" size={20} color="#00FFFF" />
-                  <Text style={styles.specText}>24/7 Reliability</Text>
-                </View>
-              </View>
-              <TouchableOpacity style={styles.industrialButton} onPress={handleIndustrialSolutions}>
-                <Text style={styles.industrialButtonText}>
-                  EXPLORE INDUSTRIAL SOLUTIONS
-                </Text>
-                <Ionicons name="arrow-forward" size={20} color="#00FFFF" />
-              </TouchableOpacity>
+          <View style={styles.industrialInner}>
+            <View style={styles.industrialBadge}>
+              <Text style={styles.industrialBadgeText}>ENTERPRISE</Text>
             </View>
-          </LinearGradient>
+            <Text style={styles.industrialTitle}>
+              RENDER & SIMULATION WORKSTATIONS
+            </Text>
+            <Text style={styles.industrialDescription}>
+              Dual RTX 6000 Ada | Threadripper Pro | 256GB ECC RAM{"\n"}
+              Built for 3D rendering, AI training, and scientific computing
+            </Text>
+            <View style={styles.industrialSpecs}>
+              <View style={styles.specItem}>
+                <Ionicons name="hardware-chip" size={20} color={COLORS.secondary} />
+                <Text style={styles.specText}>Dual GPU Support</Text>
+              </View>
+              <View style={styles.specItem}>
+                <Ionicons name="server" size={20} color={COLORS.secondary} />
+                <Text style={styles.specText}>ECC Memory</Text>
+              </View>
+              <View style={styles.specItem}>
+                <Ionicons name="shield-checkmark" size={20} color={COLORS.secondary} />
+                <Text style={styles.specText}>24/7 Reliability</Text>
+              </View>
+            </View>
+            <TouchableOpacity style={styles.industrialButton}>
+              <Text style={styles.industrialButtonText}>
+                EXPLORE INDUSTRIAL SOLUTIONS
+              </Text>
+              <Ionicons name="arrow-forward" size={20} color={COLORS.secondary} />
+            </TouchableOpacity>
+          </View>
         </TouchableOpacity>
       </View>
 
       {/* Footer CTA */}
       <View style={styles.footer}>
-        <LinearGradient
-          colors={['rgba(255, 0, 255, 0.1)', 'transparent']}
-          style={styles.footerGradient}
-        >
+        <View style={styles.footerInner}>
           <Text style={styles.footerTitle}>
             READY TO BUILD YOUR DREAM PC?
           </Text>
@@ -394,16 +365,16 @@ export default function HomeScreen() {
             activeOpacity={0.8}
           >
             <LinearGradient
-              colors={['#FF00FF', '#9400D3']}
+              colors={THEME.colors.gradients.primary}
               style={styles.footerButtonGradient}
             >
               <Text style={styles.footerButtonText}>
                 START BUILDING NOW
               </Text>
-              <Ionicons name="rocket" size={24} color="#FFF" />
+              <Ionicons name="rocket" size={20} color="#FFF" />
             </LinearGradient>
           </TouchableOpacity>
-        </LinearGradient>
+        </View>
       </View>
     </ScrollView>
   );
@@ -412,207 +383,178 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0f',
+    backgroundColor: COLORS.background,
   },
   // Hero Banner
   heroBanner: {
-    height: SCREEN_HEIGHT * 0.85,
-    marginBottom: spacing.xl,
+    height: SCREEN_HEIGHT * 0.75,
+    marginBottom: SPACING.xl,
   },
   heroGradient: {
     flex: 1,
-    padding: spacing.xl,
+    padding: SPACING.xl,
     justifyContent: 'flex-end',
   },
-  neonGrid: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'transparent',
-    opacity: 0.1,
-    backgroundImage: `linear-gradient(rgba(255, 0, 255, 0.1) 1px, transparent 1px),
-                      linear-gradient(90deg, rgba(255, 0, 255, 0.1) 1px, transparent 1px)`,
-    backgroundSize: '50px 50px',
-  },
   heroContent: {
-    marginBottom: spacing.xxl,
+    marginBottom: SPACING.xl,
   },
   badgeContainer: {
     alignSelf: 'flex-start',
-    marginBottom: spacing.lg,
+    marginBottom: SPACING.lg,
   },
   badge: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: 20,
+    backgroundColor: COLORS.primary + '20',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.full,
+    borderWidth: 1,
+    borderColor: COLORS.primary + '30',
   },
   badgeText: {
-    color: '#FFF',
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 2,
+    color: COLORS.primary,
+    fontSize: THEME.typography.fontSizes.xs,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wider,
   },
   heroTitle: {
-    fontSize: 48,
-    fontWeight: '900',
-    color: '#FFF',
+    fontSize: THEME.typography.fontSizes['5xl'],
+    fontWeight: THEME.typography.fontWeights.black,
+    color: COLORS.text.primary,
     lineHeight: 52,
-    marginBottom: spacing.md,
-    textShadowColor: 'rgba(255, 0, 255, 0.5)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 20,
+    marginBottom: SPACING.md,
+    letterSpacing: THEME.typography.letterSpacing.tight,
   },
   heroTitleHighlight: {
-    color: '#FF00FF',
+    color: COLORS.primary,
   },
   heroSubtitle: {
-    fontSize: 18,
-    color: 'rgba(255,255,255,0.7)',
-    lineHeight: 24,
-    marginBottom: spacing.xl,
+    fontSize: THEME.typography.fontSizes.lg,
+    color: COLORS.text.secondary,
+    lineHeight: THEME.typography.lineHeights.relaxed * THEME.typography.fontSizes.lg,
+    marginBottom: SPACING.xl,
   },
   statsContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 16,
-    padding: spacing.lg,
-    marginTop: spacing.xl,
+    flexDirection: "row",
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
+    marginTop: SPACING.xl,
   },
   stat: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   statValue: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#FF00FF',
-    marginBottom: spacing.xs,
+    fontSize: THEME.typography.fontSizes['3xl'],
+    fontWeight: THEME.typography.fontWeights.black,
+    color: COLORS.primary,
+    marginBottom: SPACING.xs,
   },
   statLabel: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.6)',
-    letterSpacing: 1,
-    textAlign: 'center',
+    fontSize: THEME.typography.fontSizes.xs,
+    color: COLORS.text.tertiary,
+    letterSpacing: THEME.typography.letterSpacing.wide,
+    textAlign: "center",
+    fontWeight: THEME.typography.fontWeights.medium,
   },
   statDivider: {
     width: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    marginHorizontal: spacing.md,
+    backgroundColor: COLORS.border,
+    marginHorizontal: SPACING.md,
   },
   // CTA Buttons
   ctaContainer: {
-    marginTop: spacing.xl,
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xl,
-    gap: spacing.md,
+    marginTop: SPACING.xl,
+    paddingHorizontal: SPACING.xl,
+    paddingBottom: SPACING.xl,
+    gap: SPACING.md,
   },
   primaryButton: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#FF00FF',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 10,
+    borderRadius: BORDER_RADIUS.lg,
+    overflow: "hidden",
+    ...SHADOWS.primary,
   },
   buttonGradient: {
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  buttonGlow: {
-    position: 'absolute',
-    top: -50,
-    left: -50,
-    right: -50,
-    bottom: -50,
-    backgroundColor: '#FF00FF',
-    opacity: 0.2,
-    borderRadius: 100,
-    // blurRadius: 50,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
   },
   primaryButtonText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 1,
+    color: COLORS.white,
+    fontSize: THEME.typography.fontSizes.lg,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   secondaryButton: {
-    borderRadius: 16,
-    overflow: 'hidden',
+    borderRadius: BORDER_RADIUS.lg,
+    overflow: "hidden",
     borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.3)',
+    borderColor: COLORS.border,
   },
-  secondaryButtonGradient: {
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
+  secondaryButtonInner: {
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    backgroundColor: THEME.components.button.secondary.backgroundColor,
   },
   secondaryButtonText: {
-    color: '#00FFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: 1,
+    color: COLORS.secondary,
+    fontSize: THEME.typography.fontSizes.md,
+    fontWeight: THEME.typography.fontWeights.semibold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   // Sections
   section: {
-    marginBottom: spacing.xxl,
-    paddingHorizontal: spacing.lg,
+    marginBottom: SPACING.xl,
+    paddingHorizontal: SPACING.lg,
   },
   sectionHeader: {
-    marginBottom: spacing.xl,
+    marginBottom: SPACING.lg,
   },
-  sectionTitleGradient: {
+  sectionTitleContainer: {
     alignSelf: 'flex-start',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: 12,
-    marginBottom: spacing.sm,
+    backgroundColor: COLORS.primary + '20',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.primary + '30',
   },
   sectionTitle: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#FFF',
-    letterSpacing: 2,
+    fontSize: THEME.typography.fontSizes['2xl'],
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.primary,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   sectionSubtitle: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.6)',
+    fontSize: THEME.typography.fontSizes.md,
+    color: COLORS.text.secondary,
+    fontWeight: THEME.typography.fontWeights.normal,
   },
   // Gaming PC Cards
   categoriesScroll: {
-    marginHorizontal: -spacing.lg,
+    marginHorizontal: -SPACING.lg,
   },
   categoriesContainer: {
-    paddingHorizontal: spacing.lg,
-    gap: spacing.lg,
+    paddingHorizontal: SPACING.lg,
+    gap: SPACING.lg,
   },
   gamingCard: {
     width: 280,
-    height: 320,
-    borderRadius: 20,
+    height: 280,
+    borderRadius: BORDER_RADIUS.xl,
     overflow: 'hidden',
+    ...SHADOWS.md,
   },
   gamingCardGradient: {
     flex: 1,
-    padding: spacing.lg,
+    padding: SPACING.lg,
     justifyContent: 'space-between',
-  },
-  cardGlow: {
-    position: 'absolute',
-    top: -50,
-    left: -50,
-    right: -50,
-    bottom: -50,
-    opacity: 0.1,
-    borderRadius: 100,
-    // blurRadius: 50,
   },
   gamingCardContent: {
     flex: 1,
@@ -621,35 +563,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: spacing.md,
+    marginBottom: SPACING.md,
   },
   gamingCardName: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#FFF',
+    fontSize: THEME.typography.fontSizes.lg,
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.white,
     flex: 1,
-    letterSpacing: 1,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   fpsBadge: {
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: SPACING.sm,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.sm,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   fpsText: {
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 1,
+    fontSize: THEME.typography.fontSizes.xs,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   gamingCardDescription: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: spacing.sm,
+    fontSize: THEME.typography.fontSizes.md,
+    color: 'rgba(255,255,255,0.9)',
+    marginBottom: SPACING.sm,
+    fontWeight: THEME.typography.fontWeights.medium,
   },
   gamingCardSpecs: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.6)',
-    marginBottom: spacing.lg,
-    lineHeight: 16,
+    fontSize: THEME.typography.fontSizes.sm,
+    color: 'rgba(255,255,255,0.7)',
+    marginBottom: SPACING.lg,
+    lineHeight: THEME.typography.lineHeights.normal * THEME.typography.fontSizes.sm,
   },
   gamingCardFooter: {
     flexDirection: 'row',
@@ -658,192 +603,201 @@ const styles = StyleSheet.create({
     marginTop: 'auto',
   },
   gamingCardPrice: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#FFF',
+    fontSize: THEME.typography.fontSizes['2xl'],
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.white,
   },
   exploreButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 8,
-    gap: spacing.xs,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+    gap: SPACING.xs,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   exploreButtonText: {
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 1,
+    fontSize: THEME.typography.fontSizes.xs,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   // Build Your Own Card
   buildYourOwnCard: {
     width: 280,
-    height: 320,
-    borderRadius: 20,
+    height: 280,
+    borderRadius: BORDER_RADIUS.xl,
     overflow: 'hidden',
+    backgroundColor: THEME.components.card.default.backgroundColor,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.md,
   },
-  buildYourOwnGradient: {
+  buildYourOwnInner: {
     flex: 1,
-    padding: spacing.lg,
+    padding: SPACING.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buildYourOwnIcon: {
-    marginBottom: spacing.lg,
-    position: 'relative',
-  },
-  buildYourOwnGlow: {
-    position: 'absolute',
-    top: -20,
-    left: -20,
-    right: -20,
-    bottom: -20,
-    backgroundColor: '#00FFFF',
-    opacity: 0.1,
-    borderRadius: 100,
-    // blurRadius: 20,
+    marginBottom: SPACING.lg,
+    backgroundColor: COLORS.secondary + '15',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.secondary + '30',
   },
   buildYourOwnTitle: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#FFF',
-    marginBottom: spacing.sm,
+    fontSize: THEME.typography.fontSizes.xl,
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.text.primary,
+    marginBottom: SPACING.sm,
     textAlign: 'center',
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   buildYourOwnDescription: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
+    fontSize: THEME.typography.fontSizes.sm,
+    color: COLORS.text.secondary,
     textAlign: 'center',
-    marginBottom: spacing.xl,
-    lineHeight: 18,
+    marginBottom: SPACING.xl,
+    lineHeight: THEME.typography.lineHeights.normal * THEME.typography.fontSizes.sm,
   },
   buildYourOwnButton: {
-    backgroundColor: 'rgba(0, 255, 255, 0.2)',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: 12,
+    backgroundColor: THEME.components.button.outline.backgroundColor,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.3)',
+    borderColor: COLORS.border,
   },
   buildYourOwnButtonText: {
-    color: '#00FFFF',
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 1,
+    color: COLORS.secondary,
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   // Industrial Card
   industrialCard: {
-    borderRadius: 20,
+    borderRadius: BORDER_RADIUS.xl,
     overflow: 'hidden',
+    backgroundColor: THEME.components.card.default.backgroundColor,
     borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.2)',
+    borderColor: COLORS.border,
+    ...SHADOWS.md,
   },
-  industrialGradient: {
-    padding: spacing.xl,
-  },
-  industrialContent: {
-    gap: spacing.lg,
+  industrialInner: {
+    padding: SPACING.xl,
+    gap: SPACING.lg,
   },
   industrialBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(0, 255, 255, 0.2)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: 8,
+    backgroundColor: THEME.components.badge.secondary.backgroundColor,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
     borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.3)',
+    borderColor: THEME.components.badge.secondary.borderColor,
   },
   industrialBadgeText: {
-    color: '#00FFFF',
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 1,
+    color: THEME.components.badge.secondary.textColor,
+    fontSize: THEME.typography.fontSizes.xs,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   industrialTitle: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#FFF',
-    lineHeight: 28,
+    fontSize: THEME.typography.fontSizes['2xl'],
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.text.primary,
+    lineHeight: THEME.typography.lineHeights.tight * THEME.typography.fontSizes['2xl'],
   },
   industrialDescription: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.7)',
-    lineHeight: 22,
+    fontSize: THEME.typography.fontSizes.md,
+    color: COLORS.text.secondary,
+    lineHeight: THEME.typography.lineHeights.relaxed * THEME.typography.fontSizes.md,
   },
   industrialSpecs: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.lg,
-    marginVertical: spacing.lg,
+    gap: SPACING.lg,
+    marginVertical: SPACING.lg,
   },
   specItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: SPACING.sm,
   },
   specText: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 14,
+    color: COLORS.text.secondary,
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.medium,
   },
   industrialButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.lg,
+    gap: SPACING.sm,
+    paddingVertical: SPACING.lg,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 255, 255, 0.2)',
+    borderTopColor: COLORS.border,
   },
   industrialButtonText: {
-    color: '#00FFFF',
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: 1,
+    color: COLORS.secondary,
+    fontSize: THEME.typography.fontSizes.md,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   // Footer
   footer: {
-    marginTop: spacing.xl,
-    marginBottom: spacing.xxl,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
+    marginTop: SPACING.xl,
+    marginBottom: SPACING.xxl,
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.xxl,
   },
-  footerGradient: {
-    borderRadius: 20,
-    padding: spacing.xl,
+  footerInner: {
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.xl,
     alignItems: 'center',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: 'rgba(255, 0, 255, 0.2)',
+    borderColor: COLORS.border,
+    ...SHADOWS.md,
   },
   footerTitle: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#FFF',
+    fontSize: THEME.typography.fontSizes['3xl'],
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.text.primary,
     textAlign: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: SPACING.sm,
+    letterSpacing: THEME.typography.letterSpacing.tight,
   },
   footerSubtitle: {
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.7)',
+    fontSize: THEME.typography.fontSizes.md,
+    color: COLORS.text.secondary,
     textAlign: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: SPACING.xl,
+    lineHeight: THEME.typography.lineHeights.normal * THEME.typography.fontSizes.md,
   },
   footerButton: {
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     overflow: 'hidden',
     width: '100%',
+    ...SHADOWS.primary,
   },
   footerButtonGradient: {
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.xl,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: SPACING.sm,
   },
   footerButtonText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 1,
+    color: COLORS.white,
+    fontSize: THEME.typography.fontSizes.lg,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
 });

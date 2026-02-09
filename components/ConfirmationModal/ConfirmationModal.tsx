@@ -1,4 +1,4 @@
-import { spacing } from '@/theme';
+import { THEME } from '@/theme/indexs';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
@@ -11,6 +11,7 @@ import {
     View,
 } from 'react-native';
 
+const { colors: COLORS, spacing: SPACING, borderRadius: BORDER_RADIUS, shadows: SHADOWS } = THEME;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export interface ConfirmationModalProps {
@@ -50,33 +51,88 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   const getTypeColors = () => {
     switch (type) {
       case 'danger':
-        return ['#FF0000', '#8B0000'];
+        return [COLORS.danger, COLORS.dangerDark];
       case 'success':
-        return ['#00FF00', '#008000'];
+        return [COLORS.success, COLORS.successDark];
       case 'info':
-        return ['#00FFFF', '#008B8B'];
+        return [COLORS.info, COLORS.infoDark];
       case 'warning':
       default:
-        return ['#FFA500', '#FF8C00'];
+        return [COLORS.warning, COLORS.warningDark];
     }
   };
 
   const getIconConfig = () => {
     switch (type) {
       case 'danger':
-        return { name: iconName || 'warning', color: '#FF0000' };
+        return { 
+          name: iconName || 'warning', 
+          color: COLORS.danger,
+          backgroundColor: COLORS.danger + '20'
+        };
       case 'success':
-        return { name: iconName || 'checkmark-circle', color: '#00FF00' };
+        return { 
+          name: iconName || 'checkmark-circle', 
+          color: COLORS.success,
+          backgroundColor: COLORS.success + '20'
+        };
       case 'info':
-        return { name: iconName || 'information-circle', color: '#00FFFF' };
+        return { 
+          name: iconName || 'information-circle', 
+          color: COLORS.info,
+          backgroundColor: COLORS.info + '20'
+        };
       case 'warning':
       default:
-        return { name: iconName || 'warning', color: '#FFA500' };
+        return { 
+          name: iconName || 'warning', 
+          color: COLORS.warning,
+          backgroundColor: COLORS.warning + '20'
+        };
+    }
+  };
+
+  const getButtonStyle = () => {
+    if (destructive) {
+      return {
+        gradient: THEME.colors.gradients.danger,
+        icon: 'trash',
+        backgroundColor: COLORS.danger,
+      };
+    }
+    
+    switch (type) {
+      case 'danger':
+        return {
+          gradient: THEME.colors.gradients.danger,
+          icon: 'warning',
+          backgroundColor: COLORS.danger,
+        };
+      case 'success':
+        return {
+          gradient: THEME.colors.gradients.success,
+          icon: 'checkmark',
+          backgroundColor: COLORS.success,
+        };
+      case 'info':
+        return {
+          gradient: THEME.colors.gradients.primary,
+          icon: 'checkmark',
+          backgroundColor: COLORS.primary,
+        };
+      case 'warning':
+      default:
+        return {
+          gradient: THEME.colors.gradients.warning,
+          icon: 'checkmark',
+          backgroundColor: COLORS.warning,
+        };
     }
   };
 
   const iconConfig = getIconConfig();
   const colors = gradientColors || getTypeColors();
+  const buttonStyle = getButtonStyle();
 
   return (
     <Modal
@@ -88,14 +144,14 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
           <LinearGradient
-            colors={['#0a0a0f', '#1a1a2e']}
+            colors={THEME.colors.gradients.dark}
             style={styles.modalContent}
           >
             {/* Header with Icon */}
             <View style={styles.header}>
               <View style={[
                 styles.iconContainer,
-                { backgroundColor: `${iconConfig.color}20` }
+                { backgroundColor: iconConfig.backgroundColor }
               ]}>
                 <Ionicons
                   name={iconConfig.name as any}
@@ -122,14 +178,11 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                   onPress={onCancel}
                   disabled={isLoading}
                 >
-                  <LinearGradient
-                    colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
-                    style={styles.buttonGradient}
-                  >
+                  <View style={styles.cancelButtonInner}>
                     <Text style={styles.cancelButtonText}>
                       {cancelText}
                     </Text>
-                  </LinearGradient>
+                  </View>
                 </TouchableOpacity>
               )}
 
@@ -142,15 +195,15 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                 disabled={isLoading}
               >
                 <LinearGradient
-                  colors={colors}
+                  colors={buttonStyle.gradient}
                   style={styles.buttonGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
                 >
                   {isLoading ? (
                     <Ionicons name="reload" size={20} color="#FFF" />
-                  ) : destructive ? (
-                    <Ionicons name="trash" size={20} color="#FFF" />
                   ) : (
-                    <Ionicons name="checkmark" size={20} color="#FFF" />
+                    <Ionicons name={buttonStyle.icon as any} size={20} color="#FFF" />
                   )}
                   <Text style={styles.confirmButtonText}>
                     {isLoading ? 'PROCESSING...' : confirmText}
@@ -168,96 +221,103 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: COLORS.overlay,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: spacing.md,
+    padding: SPACING.md,
   },
   modalContainer: {
-    width: SCREEN_WIDTH * 0.9,
-    borderRadius: 20,
+    width: Math.min(SCREEN_WIDTH * 0.9, 400),
+    borderRadius: BORDER_RADIUS.xl,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 8,
+    ...SHADOWS.xl,
   },
   modalContent: {
-    padding: spacing.lg,
+    padding: SPACING.lg,
   },
   header: {
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: SPACING.lg,
   },
   iconContainer: {
     width: 80,
     height: 80,
-    borderRadius: 40,
+    borderRadius: BORDER_RADIUS.full,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.md,
+    marginBottom: SPACING.md,
+    borderWidth: 2,
+    borderColor: COLORS.borderLight,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#FFF',
-    marginBottom: spacing.sm,
+    fontSize: THEME.typography.fontSizes['2xl'],
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.text.primary,
+    marginBottom: SPACING.sm,
     textAlign: 'center',
+    letterSpacing: THEME.typography.letterSpacing.tight,
   },
   message: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
+    fontSize: THEME.typography.fontSizes.md,
+    color: COLORS.text.secondary,
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: THEME.typography.lineHeights.relaxed * THEME.typography.fontSizes.md,
   },
   customContent: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    padding: spacing.md,
-    borderRadius: 12,
-    marginBottom: spacing.lg,
+    backgroundColor: COLORS.surfaceLight,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: COLORS.border,
   },
   actions: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: SPACING.sm,
   },
   cancelButton: {
     flex: 1,
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: COLORS.border,
+  },
+  cancelButtonInner: {
+    backgroundColor: THEME.components.button.secondary.backgroundColor,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   confirmButton: {
     flex: 1,
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     overflow: 'hidden',
+    ...SHADOWS.md,
   },
   destructiveButton: {
     borderWidth: 1,
-    borderColor: 'rgba(255, 0, 0, 0.2)',
+    borderColor: COLORS.danger + '30',
   },
   buttonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    gap: 8,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    gap: SPACING.xs,
   },
   cancelButtonText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    color: THEME.components.button.secondary.textColor,
+    fontSize: THEME.typography.fontSizes.md,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   confirmButtonText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    color: COLORS.white,
+    fontSize: THEME.typography.fontSizes.md,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
 });
 
