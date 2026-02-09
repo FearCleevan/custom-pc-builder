@@ -14,6 +14,7 @@ import {
   Animated,
   Dimensions,
   FlatList,
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -23,14 +24,14 @@ import {
   View,
 } from 'react-native';
 
+// Import the new modal components
+import { ProductDetailModal } from '@/components/ProductDetailModal';
+import { ToastNotification } from '@/components/ToastNotification';
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - spacing.lg * 3) / 2;
 const HEADER_EXPANDED_HEIGHT = 130;
 const HEADER_COLLAPSED_HEIGHT = 80;
-
-// Import the new modal components
-import { ProductDetailModal } from '@/components/ProductDetailModal';
-import { ToastNotification } from '@/components/ToastNotification';
 
 export default function ExploreScreen() {
   const router = useRouter();
@@ -611,11 +612,21 @@ export default function ExploreScreen() {
                 <Text style={styles.stockText}>{item.stock}</Text>
               </View>
 
-              {/* Component Image/Icon */}
-              <View style={styles.imagePlaceholder}>
-                <Text style={styles.imageText}>
-                  {item.type.charAt(0).toUpperCase()}
-                </Text>
+              {/* Component Image */}
+              <View style={styles.imageContainer}>
+                {item.image ? (
+                  <Image 
+                    source={{ uri: item.image }} 
+                    style={styles.componentImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={styles.imagePlaceholder}>
+                    <Text style={styles.imageText}>
+                      {item.type.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
               </View>
 
               {/* Component Type */}
@@ -855,6 +866,26 @@ const styles = StyleSheet.create({
   compactSearchButton: {
     padding: spacing.xs,
   },
+  compareButton: {
+    position: 'relative',
+    padding: spacing.xs,
+  },
+  compareBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: '#00FFFF',
+    minWidth: 14,
+    height: 14,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  compareBadgeText: {
+    fontSize: 8,
+    color: '#0a0a0f',
+    fontWeight: '900',
+  },
   expandedHeader: {
     paddingHorizontal: spacing.lg,
   },
@@ -974,26 +1005,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
   },
-  compareButton: {
-    position: 'relative',
-    padding: spacing.xs,
-  },
-  compareBadge: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    backgroundColor: '#00FFFF',
-    minWidth: 14,
-    height: 14,
-    borderRadius: 7,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  compareBadgeText: {
-    fontSize: 8,
-    color: '#0a0a0f',
-    fontWeight: '900',
-  },
   sortButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1061,7 +1072,7 @@ const styles = StyleSheet.create({
   },
   cardGradient: {
     padding: spacing.sm,
-    height: 240,
+    height: 260,
     justifyContent: 'space-between',
   },
   stockBadge: {
@@ -1085,14 +1096,25 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontWeight: '600',
   },
-  imagePlaceholder: {
+  imageContainer: {
     width: '100%',
-    height: 60,
+    height: 70,
     borderRadius: 6,
     backgroundColor: 'rgba(255,255,255,0.05)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xs,
+    overflow: 'hidden',
+  },
+  componentImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   imageText: {
     fontSize: 24,
