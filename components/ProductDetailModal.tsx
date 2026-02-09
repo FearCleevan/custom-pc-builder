@@ -3,7 +3,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
 import {
-  Alert,
   Dimensions,
   FlatList,
   Image,
@@ -12,14 +11,14 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 
-import { allComponents } from '@/data/mockData';
+import { allComponents, ComponentItem } from '@/data/mockData';
 import { useBuildStore } from '@/store/useBuildStore';
 import { useCompareStore } from '@/store/useCompareStore';
 import { spacing } from '@/theme';
-import { ComponentItem } from '@/types/component';
+import { ProductType } from '@/types/product';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - spacing.lg * 3) / 2;
@@ -67,18 +66,34 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     }, 3000);
   };
 
-  const handleAddToBuild = () => {
-    if (!product) return;
+const handleAddToBuild = () => {
+  if (!product) return;
 
-    const buildComponentTypes = ['cpu', 'gpu', 'motherboard', 'ram', 'cooler', 'storage', 'psu', 'case'];
-    
-    if (buildComponentTypes.includes(product.type)) {
-      addPart(product);
-      showToastNotification(`${product.name} has been added to your build.`, 'success');
-    } else {
-      showToastNotification('This component type cannot be added to a PC build.', 'error');
-    }
+  // Map your product types to the expected ProductType
+  const typeMap: Record<string, ProductType> = {
+    'cpu': 'cpu',
+    'gpu': 'gpu',
+    'motherboard': 'motherboard',
+    'ram': 'ram',
+    'cooler': 'cooler',
+    'storage': 'storage',
+    'psu': 'psu',
+    'case': 'case',
+    'fan': 'cooler', // If fan should be mapped to cooler
+    'monitor': 'monitor', // Add if monitor is a ProductType
+    'keyboard': 'keyboard', // Add if keyboard is a ProductType
+    'mouse': 'mouse', // Add if mouse is a ProductType
   };
+
+  const buildType = typeMap[product.type];
+  
+  if (buildType) {
+    addPart(buildType, product);
+    showToastNotification(`${product.name} has been added to your build.`, 'success');
+  } else {
+    showToastNotification('This component type cannot be added to a PC build.', 'error');
+  }
+};
 
   const handleAddToCompare = () => {
     if (!product) return;
@@ -87,17 +102,17 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     showToastNotification(`${product.name} has been added to compare.`, 'success');
   };
 
-  const handleView3D = () => {
-    if (product?.has3D) {
-      Alert.alert(
-        '3D Model',
-        '3D model viewer will be available soon.',
-        [{ text: 'OK' }]
-      );
-    } else {
-      showToastNotification('This product does not have a 3D model.', 'error');
-    }
-  };
+  // const handleView3D = () => {
+  //   if (product?.has3D) {
+  //     Alert.alert(
+  //       '3D Model',
+  //       '3D model viewer will be available soon.',
+  //       [{ text: 'OK' }]
+  //     );
+  //   } else {
+  //     showToastNotification('This product does not have a 3D model.', 'error');
+  //   }
+  // };
 
   const handleSimilarProductPress = (similarProduct: ComponentItem) => {
     if (onProductChange) {
@@ -310,7 +325,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               )}
 
               {/* Action Buttons Row */}
-              <View style={styles.actionButtonsRow}>
+              {/* <View style={styles.actionButtonsRow}>
                 {product.has3D && (
                   <TouchableOpacity 
                     style={styles.view3DButton}
@@ -328,7 +343,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <Ionicons name="git-compare" size={16} color="#00FFFF" />
                   <Text style={styles.compareButtonText}>COMPARE</Text>
                 </TouchableOpacity>
-              </View>
+              </View> */}
             </View>
 
             {/* Specifications */}

@@ -417,12 +417,21 @@ export default function ExploreScreen() {
           if (key === 'Series' && (component.type === 'gpu' || selectedCategory === 'gpu')) {
             let seriesValue = component.specs['Series'];
 
+            // Convert to string if it's not already
+            const seriesStr = typeof seriesValue === 'string' ? seriesValue : String(seriesValue);
+
             // If Series is not in specs, derive it from Chipset
-            if (!seriesValue) {
+            if (!seriesStr || seriesStr === 'undefined' || seriesStr === 'null') {
               const chipsetValue = component.specs['Chipset'];
               if (chipsetValue) {
-                seriesValue = getGPUSeries(chipsetValue);
+                // Convert chipset to string as well
+                const chipsetStr = typeof chipsetValue === 'string' ? chipsetValue : String(chipsetValue);
+                seriesValue = getGPUSeries(chipsetStr);
+              } else {
+                seriesValue = '';
               }
+            } else {
+              seriesValue = seriesStr;
             }
 
             return seriesValue === value;

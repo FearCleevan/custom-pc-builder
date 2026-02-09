@@ -14,6 +14,8 @@ export interface ComponentItem {
   stockCount: number; // Make this required, not optional
   category?: string;
   quantity?: number;
+  store?: string;
+  // has3D?: boolean;
 }
 
 // Image URL mapping function
