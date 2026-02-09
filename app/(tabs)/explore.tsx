@@ -82,6 +82,70 @@ export default function ExploreScreen() {
     extrapolate: 'clamp',
   });
 
+  // Helper function to extract numeric value from spec string
+  const extractNumericValue = (specValue: string | number | boolean): number => {
+    if (typeof specValue === 'number') return specValue;
+    if (typeof specValue === 'boolean') return specValue ? 1 : 0;
+
+    const str = String(specValue).trim();
+
+    // Remove any non-numeric characters except digits
+    const numericStr = str.replace(/[^\d]/g, '');
+
+    return numericStr ? parseInt(numericStr, 10) : 0;
+  };
+
+  // Helper function to extract RAM speed
+  const extractRamSpeed = (speedValue: string | number | boolean): number => {
+    if (typeof speedValue === 'number') return speedValue;
+
+    const str = String(speedValue);
+
+    // Try different patterns for RAM speed
+    const patterns = [
+      /(\d+)\s*MHz/i,          // "6000 MHz"
+      /(\d+)\s*MT\/s/i,        // "6000 MT/s"
+      /DDR\d+\s*(\d+)/i,       // "DDR5 6000"
+      /(\d+)$/                 // Just numbers at the end
+    ];
+
+    for (const pattern of patterns) {
+      const match = str.match(pattern);
+      if (match) {
+        return parseInt(match[1], 10);
+      }
+    }
+
+    // Fallback to general numeric extraction
+    return extractNumericValue(str);
+  };
+
+  // Helper function to get GPU series from chipset
+  const getGPUSeries = (chipset: string): string => {
+    const chipsetStr = String(chipset).toUpperCase();
+
+    if (chipsetStr.includes('RTX 4090') || chipsetStr.includes('RTX 4080') || chipsetStr.includes('RTX 4070')) {
+      return 'RTX 40 Series';
+    }
+    if (chipsetStr.includes('RTX 3080') || chipsetStr.includes('RTX 3070') || chipsetStr.includes('RTX 3060')) {
+      return 'RTX 30 Series';
+    }
+    if (chipsetStr.includes('RTX 2080') || chipsetStr.includes('RTX 2070') || chipsetStr.includes('RTX 2060')) {
+      return 'RTX 20 Series';
+    }
+    if (chipsetStr.includes('RX 7900') || chipsetStr.includes('RX 7800') || chipsetStr.includes('RX 7700')) {
+      return 'RX 7000 Series';
+    }
+    if (chipsetStr.includes('RX 6800') || chipsetStr.includes('RX 6700') || chipsetStr.includes('RX 6600')) {
+      return 'RX 6000 Series';
+    }
+    if (chipsetStr.includes('RX 5700') || chipsetStr.includes('RX 5600')) {
+      return 'RX 5000 Series';
+    }
+
+    return 'Unknown Series';
+  };
+
   // Category-specific filter options
   const getCategoryFilters = () => {
     const baseFilters = [
@@ -94,10 +158,9 @@ export default function ExploreScreen() {
           ...baseFilters,
           { id: 'Socket', label: 'Socket', type: 'select', options: ['AM5', 'AM4', 'LGA1700', 'LGA1200'] },
           { id: 'Manufacturer', label: 'Brand', type: 'select', options: ['AMD', 'Intel'] },
-          { id: 'coreCountFilter', label: 'Cores', type: 'select', options: ['4+', '6+', '8+', '12+', '16+'] }
+          { id: 'Core Count', label: 'Cores', type: 'select', options: ['4+', '6+', '8+', '12+', '16+'] }
         ];
 
-      // In the getCategoryFilters() function:
       case 'gpu':
         return [
           ...baseFilters,
@@ -119,14 +182,13 @@ export default function ExploreScreen() {
             label: 'VRAM',
             type: 'select',
             options: [
-              '4GB',
-              '6GB',
-              '8GB',
-              '10GB',
-              '11GB',
-              '12GB',
-              '16GB',
-              '24GB'
+              '4GB+',
+              '6GB+',
+              '8GB+',
+              '10GB+',
+              '12GB+',
+              '16GB+',
+              '24GB+'
             ]
           },
           {
@@ -138,25 +200,7 @@ export default function ExploreScreen() {
               'AMD',
               'ASUS',
               'MSI',
-              'Gigabyte',
-              'ZOTAC',
-              'Sapphire',
-              'PowerColor'
-            ]
-          },
-          {
-            id: 'Chipset',
-            label: 'Chipset',
-            type: 'select',
-            options: [
-              'GeForce RTX 4090',
-              'GeForce RTX 4080 Super',
-              'GeForce RTX 4070 Ti Super',
-              'GeForce RTX 3080',
-              'GeForce RTX 2080 Ti',
-              'Radeon RX 7900 XTX',
-              'Radeon RX 7800 XT',
-              'Radeon RX 6800 XT'
+              'Gigabyte'
             ]
           }
         ];
@@ -166,29 +210,70 @@ export default function ExploreScreen() {
           ...baseFilters,
           { id: 'Socket', label: 'Socket', type: 'select', options: ['AM5', 'AM4', 'LGA1700'] },
           { id: 'Chipset', label: 'Chipset', type: 'select', options: ['X670', 'B650', 'Z790', 'B760'] },
-          { id: 'ramTypeFilter', label: 'RAM Type', type: 'select', options: ['DDR5', 'DDR4'] }
+          { id: 'RAM Type', label: 'RAM Type', type: 'select', options: ['DDR5', 'DDR4'] }
         ];
 
       case 'ram':
         return [
           ...baseFilters,
-          { id: 'ramTypeFilter', label: 'Type', type: 'select', options: ['DDR5', 'DDR4'] },
-          { id: 'capacityFilter', label: 'Capacity', type: 'select', options: ['16GB', '32GB', '64GB', '128GB+'] },
-          { id: 'speedFilter', label: 'Speed', type: 'select', options: ['4800+', '5200+', '5600+', '6000+', '6400+'] }
+          {
+            id: 'RAM Type',
+            label: 'Type',
+            type: 'select',
+            options: ['DDR5', 'DDR4']
+          },
+          {
+            id: 'Total Capacity',
+            label: 'Total Capacity',
+            type: 'select',
+            options: [
+              '16GB+',
+              '32GB+',
+              '64GB+',
+              '128GB+'
+            ]
+          },
+          {
+            id: 'Speed',
+            label: 'Speed',
+            type: 'select',
+            options: [
+              '4800+',
+              '5200+',
+              '5600+',
+              '6000+',
+              '6400+',
+              '3200+',
+              '3600+',
+              '4000+'
+            ]
+          },
+          {
+            id: 'Manufacturer',
+            label: 'Brand',
+            type: 'select',
+            options: [
+              'Corsair',
+              'G.Skill',
+              'Kingston',
+              'TeamGroup',
+              'Crucial'
+            ]
+          }
         ];
 
       case 'storage':
         return [
           ...baseFilters,
           { id: 'Type', label: 'Type', type: 'select', options: ['NVMe SSD', 'SATA SSD', 'HDD'] },
-          { id: 'capacityFilter', label: 'Capacity', type: 'select', options: ['500GB+', '1TB+', '2TB+', '4TB+'] },
+          { id: 'Capacity', label: 'Capacity', type: 'select', options: ['500GB+', '1TB+', '2TB+', '4TB+'] },
           { id: 'Interface', label: 'Interface', type: 'select', options: ['PCIe 4.0', 'PCIe 3.0', 'SATA 6Gb/s'] }
         ];
 
       case 'psu':
         return [
           ...baseFilters,
-          { id: 'wattageFilter', label: 'Wattage', type: 'select', options: ['500W+', '650W+', '750W+', '850W+', '1000W+'] },
+          { id: 'Wattage', label: 'Wattage', type: 'select', options: ['500W+', '650W+', '750W+', '850W+', '1000W+'] },
           { id: 'Rating', label: 'Efficiency', type: 'select', options: ['80+ Bronze', '80+ Gold', '80+ Platinum', '80+ Titanium'] },
           { id: 'Modularity', label: 'Modularity', type: 'select', options: ['Non-modular', 'Semi-modular', 'Full modular'] }
         ];
@@ -208,19 +293,24 @@ export default function ExploreScreen() {
           { id: 'Socket Support', label: 'Socket Support', type: 'select', options: ['AM5', 'AM4', 'LGA1700', 'All'] }
         ];
 
+      case 'fan':
+        return [
+          ...baseFilters,
+          { id: 'Size', label: 'Fan Size', type: 'select', options: ['120mm', '140mm', '200mm'] },
+          { id: 'RGB', label: 'RGB', type: 'select', options: ['Yes', 'No'] }
+        ];
+
+      case 'monitor':
+        return [
+          ...baseFilters,
+          { id: 'Size', label: 'Screen Size', type: 'select', options: ['24"', '27"', '32"', '34"+'] },
+          { id: 'Resolution', label: 'Resolution', type: 'select', options: ['1080p', '1440p', '4K'] },
+          { id: 'Refresh Rate', label: 'Refresh Rate', type: 'select', options: ['144Hz+', '165Hz+', '240Hz+'] }
+        ];
+
       default:
         return baseFilters;
     }
-  };
-
-  // Helper function to extract numeric value from spec string
-  const extractNumericValue = (specValue: string | number | boolean): number => {
-    if (typeof specValue === 'number') return specValue;
-    if (typeof specValue === 'boolean') return specValue ? 1 : 0;
-
-    const str = String(specValue);
-    const match = str.match(/\d+/);
-    return match ? parseInt(match[0], 10) : 0;
   };
 
   // Get components based on selected category and filters
@@ -231,13 +321,22 @@ export default function ExploreScreen() {
 
     // Apply search filter
     if (searchQuery.trim()) {
-      components = components.filter(component =>
-        component.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        component.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        Object.values(component.specs).some(value =>
-          String(value).toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      );
+      const query = searchQuery.toLowerCase().trim();
+      components = components.filter(component => {
+        // Search in name, type, and category
+        if (
+          component.name.toLowerCase().includes(query) ||
+          component.type.toLowerCase().includes(query) ||
+          (component.category && component.category.toLowerCase().includes(query))
+        ) {
+          return true;
+        }
+
+        // Search in all specs
+        return Object.values(component.specs).some(value =>
+          String(value).toLowerCase().includes(query)
+        );
+      });
     }
 
     // Apply stock filter
@@ -254,56 +353,101 @@ export default function ExploreScreen() {
     Object.entries(filters).forEach(([key, value]) => {
       if (value && components.length > 0) {
         components = components.filter(component => {
-          // Handle special filter cases
-          if (key === 'coreCountFilter' && value.endsWith('+')) {
-            const minCores = parseInt(value);
-            const specValue = component.specs['Core Count'];
-            const coreCount = extractNumericValue(specValue);
-            return coreCount >= minCores;
+          // Handle special "+" filters for ranges
+          if (typeof value === 'string' && value.endsWith('+')) {
+            const minValue = extractNumericValue(value);
+
+            // CPU Core Count
+            if (key === 'Core Count') {
+              const coreCount = extractNumericValue(component.specs['Core Count'] || 0);
+              return coreCount >= minValue;
+            }
+
+            // GPU VRAM
+            if (key === 'VRAM') {
+              const vramValue = component.specs['VRAM'] || component.specs['Memory Size'];
+              const vram = extractNumericValue(vramValue);
+              return vram >= minValue;
+            }
+
+            // RAM Capacity
+            if (key === 'Total Capacity') {
+              const capacityValue = component.specs['Total Capacity'];
+              const capacity = extractNumericValue(capacityValue);
+              return capacity >= minValue;
+            }
+
+            // RAM Speed
+            if (key === 'Speed' && (component.type === 'ram' || selectedCategory === 'ram')) {
+              const speedValue = component.specs['Speed'];
+              const speed = extractRamSpeed(speedValue);
+              return speed >= minValue;
+            }
+
+            // Storage Capacity
+            if (key === 'Capacity') {
+              const capacityValue = component.specs['Capacity'] || component.specs['Size'];
+              const capacity = extractNumericValue(capacityValue);
+              return capacity >= minValue;
+            }
+
+            // PSU Wattage
+            if (key === 'Wattage') {
+              const wattageValue = component.specs['Wattage'];
+              const wattage = extractNumericValue(wattageValue);
+              return wattage >= minValue;
+            }
+
+            // Monitor Refresh Rate
+            if (key === 'Refresh Rate') {
+              const refreshValue = component.specs['Refresh Rate'];
+              const refresh = extractNumericValue(refreshValue);
+              return refresh >= minValue;
+            }
+
+            // Monitor Size
+            if (key === 'Size' && (component.type === 'monitor' || selectedCategory === 'monitor')) {
+              const sizeValue = component.specs['Size'];
+              const size = extractNumericValue(sizeValue);
+              return size >= minValue;
+            }
           }
 
-          if (key === 'vramFilter' && value.endsWith('+')) {
-            const minVRAM = parseInt(value);
-            const specValue = component.specs['VRAM'];
-            const vram = extractNumericValue(specValue);
-            return vram >= minVRAM;
+          // Handle GPU Series filter
+          if (key === 'Series' && (component.type === 'gpu' || selectedCategory === 'gpu')) {
+            let seriesValue = component.specs['Series'];
+
+            // If Series is not in specs, derive it from Chipset
+            if (!seriesValue) {
+              const chipsetValue = component.specs['Chipset'];
+              if (chipsetValue) {
+                seriesValue = getGPUSeries(chipsetValue);
+              }
+            }
+
+            return seriesValue === value;
           }
 
-          if (key === 'capacityFilter' && value.endsWith('+')) {
-            const minCapacity = parseInt(value);
-            const specValue = component.specs['Capacity'] || component.specs['Size'];
-            const capacity = extractNumericValue(specValue);
-            return capacity >= minCapacity;
-          }
-
-          if (key === 'speedFilter' && value.endsWith('+')) {
-            const minSpeed = parseInt(value);
-            const specValue = component.specs['Speed'];
-            const speed = extractNumericValue(specValue);
-            return speed >= minSpeed;
-          }
-
-          if (key === 'wattageFilter' && value.endsWith('+')) {
-            const minWattage = parseInt(value);
-            const specValue = component.specs['Wattage'];
-            const wattage = extractNumericValue(specValue);
-            return wattage >= minWattage;
-          }
-
-          if (key === 'ramTypeFilter') {
-            const specValue = component.specs['Type'] || component.specs['RAM Type'];
-            return String(specValue).includes(value);
-          }
-
-          // Direct spec matching
+          // Handle exact string matches
           const specValue = component.specs[key];
           if (specValue === undefined) return false;
 
-          // For exact matches (like Socket, Manufacturer, etc.)
+          // String comparison (case-insensitive for some fields)
           if (typeof specValue === 'string') {
-            return specValue.includes(value) || value.includes(specValue);
+            const specStr = specValue.toLowerCase();
+            const filterStr = String(value).toLowerCase();
+
+            // For fields like Manufacturer, Socket, etc., do exact or partial match
+            if (['Manufacturer', 'Socket', 'RAM Type', 'Type', 'Interface',
+              'Rating', 'Modularity', 'Form Factor', 'Color', 'Side Panel',
+              'Resolution', 'Size', 'RGB'].includes(key)) {
+              return specStr === filterStr || specStr.includes(filterStr) || filterStr.includes(specStr);
+            }
+
+            return specStr === filterStr;
           }
 
+          // For numeric/boolean values
           return String(specValue) === String(value);
         });
       }
@@ -436,7 +580,6 @@ export default function ExploreScreen() {
               <TouchableOpacity
                 style={styles.compactSearchButton}
                 onPress={() => {
-                  // Focus on search input or open search
                   flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
                 }}
               >
@@ -952,6 +1095,7 @@ export default function ExploreScreen() {
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {

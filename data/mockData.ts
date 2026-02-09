@@ -7,11 +7,11 @@ export interface ComponentItem {
   id: string;
   name: string;
   type: string;
-  image?: string;
+  image: string;
   price: number;
   specs: ComponentSpecs;
   stock: string;
-  stockCount: number;
+  stockCount: number; // Make this required, not optional
   category?: string;
   quantity?: number;
 }
@@ -768,7 +768,7 @@ export const ramData: ComponentItem[] = [
       "RAM Type": "DDR5",
       "Form Factor": "288-pin DIMM",
       "Capacity Per Module": "16GB",
-      "Total Capacity": "32 GB",
+      "Total Capacity": "32GB",
       "Number of Modules": 2,
       Speed: "6000 MHz",
       "CAS Latency": 36,
@@ -796,7 +796,7 @@ export const ramData: ComponentItem[] = [
       "RAM Type": "DDR5",
       "Form Factor": "288-pin DIMM",
       "Capacity Per Module": "32GB",
-      "Total Capacity": "64 GB",
+      "Total Capacity": "64GB",
       "Number of Modules": 2,
       Speed: "6400 MHz",
       "CAS Latency": 32,
@@ -824,7 +824,7 @@ export const ramData: ComponentItem[] = [
       "RAM Type": "DDR5",
       "Form Factor": "288-pin DIMM",
       "Capacity Per Module": "16GB",
-      "Total Capacity": "16 GB",
+      "Total Capacity": "16GB",
       "Number of Modules": 1,
       Speed: "5600 MHz",
       "CAS Latency": 40,
@@ -852,7 +852,7 @@ export const ramData: ComponentItem[] = [
       "RAM Type": "DDR5",
       "Form Factor": "288-pin DIMM",
       "Capacity Per Module": "32GB",
-      "Total Capacity": "128 GB",
+      "Total Capacity": "128GB",
       "Number of Modules": 4,
       Speed: "6000 MHz",
       "CAS Latency": 40,
@@ -880,7 +880,7 @@ export const ramData: ComponentItem[] = [
       "RAM Type": "DDR5",
       "Form Factor": "288-pin DIMM",
       "Capacity Per Module": "32GB",
-      "Total Capacity": "32 GB",
+      "Total Capacity": "32GB",
       "Number of Modules": 1,
       Speed: "4800 MHz",
       "CAS Latency": 40,
