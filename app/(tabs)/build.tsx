@@ -1,5 +1,6 @@
 import { CompatibilityBanner } from "@/components/CompatibilityBanner";
 import { ComponentSelectionModal } from "@/components/ComponentSelectionModal";
+import ConfirmationModal from "@/components/ConfirmationModal/ConfirmationModal"; // Import the confirmation modal
 import { PriceSummary } from "@/components/PriceSummary";
 import { allComponents, getPrebuiltSeries } from "@/data/mockData";
 import { checkCompatibility } from "@/logic/compatibility";
@@ -67,9 +68,25 @@ export default function BuildScreen() {
   const compatibilityIssues = checkCompatibility(buildState);
   const [expandedSlot, setExpandedSlot] = useState<string | null>(null);
   const [showComponentModal, setShowComponentModal] = useState(false);
-  const [selectedSlotType, setSelectedSlotType] = useState<ProductType | null>(
-    null,
-  );
+  const [selectedSlotType, setSelectedSlotType] = useState<ProductType | null>(null);
+
+  // Confirmation modal state
+  const [confirmationModal, setConfirmationModal] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    type?: 'warning' | 'danger' | 'info' | 'success';
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm: () => void;
+    destructive?: boolean;
+    slotType?: ProductType | null;
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   // Handle pre-built series loading
   useEffect(() => {
@@ -124,21 +141,22 @@ export default function BuildScreen() {
   };
 
   const handleRemovePart = (type: ProductType) => {
-    Alert.alert(
-      "Remove Component",
-      "Are you sure you want to remove this component?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: () => {
-            removePart(type);
-            setExpandedSlot(null);
-          },
-        },
-      ],
-    );
+    const product = getProductForSlot(type);
+
+    setConfirmationModal({
+      visible: true,
+      title: "Remove Component",
+      message: `Are you sure you want to remove ${product?.name || 'this component'} from your build?`,
+      type: "warning",
+      confirmText: "REMOVE",
+      cancelText: "CANCEL",
+      onConfirm: () => {
+        removePart(type);
+        setExpandedSlot(null);
+        setConfirmationModal(prev => ({ ...prev, visible: false }));
+      },
+      slotType: type,
+    });
   };
 
   const handleComponentSelect = (component: Product | null) => {
@@ -164,19 +182,39 @@ export default function BuildScreen() {
     const hasBuild = Object.values(buildState).some(
       (product) => product !== null,
     );
+
     if (!hasBuild) {
-      Alert.alert(
-        "Empty Build",
-        "Please add some components to your build first.",
-      );
+      setConfirmationModal({
+        visible: true,
+        title: "Empty Build",
+        message: "Please add some components to your build first.",
+        type: "info",
+        confirmText: "OK",
+        cancelText: "", // Empty string to hide cancel button
+        onConfirm: () => {
+          setConfirmationModal(prev => ({ ...prev, visible: false }));
+        },
+      });
       return;
     }
 
-    Alert.alert(
-      "Save Build",
-      "This feature will be available when connected to Supabase.",
-      [{ text: "OK" }],
-    );
+    setConfirmationModal({
+      visible: true,
+      title: "Save Build",
+      message: "Save your current build configuration?",
+      type: "info",
+      confirmText: "SAVE",
+      cancelText: "CANCEL",
+      onConfirm: () => {
+        // Your save logic here
+        Alert.alert(
+          "Save Build",
+          "This feature will be available when connected to Supabase.",
+          [{ text: "OK" }],
+        );
+        setConfirmationModal(prev => ({ ...prev, visible: false }));
+      },
+    });
   };
 
   const handleViewComponentDetails = (component: Product) => {
@@ -196,7 +234,7 @@ export default function BuildScreen() {
       const currentQuantity = product.quantity || 1;
       const maxQuantity = BUILD_SLOTS.find(s => s.type === type)?.maxQuantity || 1;
       const newQuantity = Math.max(1, Math.min(maxQuantity, currentQuantity + delta));
-      
+
       // Update product with new quantity
       const updatedProduct = { ...product, quantity: newQuantity };
       addPart(type, updatedProduct);
@@ -344,9 +382,9 @@ export default function BuildScreen() {
                       {/* Product Image */}
                       <View style={styles.componentImagePlaceholder}>
                         {product.image ? (
-                          <Image 
-                            source={{ uri: product.image }} 
-                            style={styles.componentImage} 
+                          <Image
+                            source={{ uri: product.image }}
+                            style={styles.componentImage}
                             resizeMode="cover"
                           />
                         ) : (
@@ -476,18 +514,31 @@ export default function BuildScreen() {
         <TouchableOpacity
           style={styles.secondaryButton}
           onPress={() => {
-            Alert.alert(
-              "Clear Build",
-              "Are you sure you want to clear all components?",
-              [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Clear All",
-                  style: "destructive",
-                  onPress: clearBuild,
-                },
-              ],
+            const hasBuild = Object.values(buildState).some(
+              (product) => product !== null,
             );
+
+            if (!hasBuild) {
+              Alert.alert(
+                "Empty Build",
+                "Your build is already empty.",
+              );
+              return;
+            }
+
+            setConfirmationModal({
+              visible: true,
+              title: "Clear Build",
+              message: "Are you sure you want to clear all components from your build? This action cannot be undone.",
+              type: "danger",
+              confirmText: "CLEAR ALL",
+              cancelText: "CANCEL",
+              destructive: true,
+              onConfirm: () => {
+                clearBuild();
+                setConfirmationModal(prev => ({ ...prev, visible: false }));
+              },
+            });
           }}
           activeOpacity={0.8}
         >
@@ -584,10 +635,34 @@ export default function BuildScreen() {
           }
         />
       </Modal>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        visible={confirmationModal.visible}
+        title={confirmationModal.title}
+        message={confirmationModal.message}
+        type={confirmationModal.type}
+        confirmText={confirmationModal.confirmText}
+        cancelText={confirmationModal.cancelText}
+        onConfirm={confirmationModal.onConfirm}
+        onCancel={() => setConfirmationModal(prev => ({ ...prev, visible: false }))}
+        destructive={confirmationModal.destructive}
+        customContent={confirmationModal.slotType ? (
+          <View style={{ alignItems: 'center', padding: spacing.sm }}>
+            <Ionicons 
+              name={BUILD_SLOTS.find(s => s.type === confirmationModal.slotType)?.icon as any} 
+              size={20} 
+              color="#FF00FF" 
+            />
+            <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, marginTop: 4 }}>
+              Slot: {BUILD_SLOTS.find(s => s.type === confirmationModal.slotType)?.label}
+            </Text>
+          </View>
+        ) : undefined}
+      />
     </ScrollView>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
