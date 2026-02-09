@@ -92,69 +92,135 @@ export default function ExploreScreen() {
       case 'cpu':
         return [
           ...baseFilters,
-          { id: 'socket', label: 'Socket', type: 'select', options: ['AM5', 'AM4', 'LGA1700', 'LGA1200'] },
-          { id: 'manufacturer', label: 'Brand', type: 'select', options: ['AMD', 'Intel'] },
-          { id: 'coreCount', label: 'Cores', type: 'select', options: ['4+', '6+', '8+', '12+', '16+'] }
+          { id: 'Socket', label: 'Socket', type: 'select', options: ['AM5', 'AM4', 'LGA1700', 'LGA1200'] },
+          { id: 'Manufacturer', label: 'Brand', type: 'select', options: ['AMD', 'Intel'] },
+          { id: 'coreCountFilter', label: 'Cores', type: 'select', options: ['4+', '6+', '8+', '12+', '16+'] }
         ];
 
+      // In the getCategoryFilters() function:
       case 'gpu':
         return [
           ...baseFilters,
-          { id: 'chipset', label: 'Chipset', type: 'select', options: ['RTX 40 Series', 'RTX 30 Series', 'RX 7000 Series', 'RX 6000 Series'] },
-          { id: 'vram', label: 'VRAM', type: 'select', options: ['8GB+', '12GB+', '16GB+', '24GB+'] },
-          { id: 'manufacturer', label: 'Brand', type: 'select', options: ['NVIDIA', 'AMD', 'ASUS', 'MSI', 'Gigabyte'] }
+          {
+            id: 'Series',
+            label: 'Series',
+            type: 'select',
+            options: [
+              'RTX 40 Series',
+              'RTX 30 Series',
+              'RTX 20 Series',
+              'RX 7000 Series',
+              'RX 6000 Series',
+              'RX 5000 Series'
+            ]
+          },
+          {
+            id: 'VRAM',
+            label: 'VRAM',
+            type: 'select',
+            options: [
+              '4GB',
+              '6GB',
+              '8GB',
+              '10GB',
+              '11GB',
+              '12GB',
+              '16GB',
+              '24GB'
+            ]
+          },
+          {
+            id: 'Manufacturer',
+            label: 'Brand',
+            type: 'select',
+            options: [
+              'NVIDIA',
+              'AMD',
+              'ASUS',
+              'MSI',
+              'Gigabyte',
+              'ZOTAC',
+              'Sapphire',
+              'PowerColor'
+            ]
+          },
+          {
+            id: 'Chipset',
+            label: 'Chipset',
+            type: 'select',
+            options: [
+              'GeForce RTX 4090',
+              'GeForce RTX 4080 Super',
+              'GeForce RTX 4070 Ti Super',
+              'GeForce RTX 3080',
+              'GeForce RTX 2080 Ti',
+              'Radeon RX 7900 XTX',
+              'Radeon RX 7800 XT',
+              'Radeon RX 6800 XT'
+            ]
+          }
         ];
 
       case 'motherboard':
         return [
           ...baseFilters,
-          { id: 'socket', label: 'Socket', type: 'select', options: ['AM5', 'AM4', 'LGA1700'] },
-          { id: 'chipset', label: 'Chipset', type: 'select', options: ['X670', 'B650', 'Z790', 'B760'] },
-          { id: 'ramType', label: 'RAM Type', type: 'select', options: ['DDR5', 'DDR4'] }
+          { id: 'Socket', label: 'Socket', type: 'select', options: ['AM5', 'AM4', 'LGA1700'] },
+          { id: 'Chipset', label: 'Chipset', type: 'select', options: ['X670', 'B650', 'Z790', 'B760'] },
+          { id: 'ramTypeFilter', label: 'RAM Type', type: 'select', options: ['DDR5', 'DDR4'] }
         ];
 
       case 'ram':
         return [
           ...baseFilters,
-          { id: 'ramType', label: 'Type', type: 'select', options: ['DDR5', 'DDR4'] },
-          { id: 'capacity', label: 'Capacity', type: 'select', options: ['16GB', '32GB', '64GB', '128GB+'] },
-          { id: 'speed', label: 'Speed', type: 'select', options: ['4800+', '5200+', '5600+', '6000+', '6400+'] }
+          { id: 'ramTypeFilter', label: 'Type', type: 'select', options: ['DDR5', 'DDR4'] },
+          { id: 'capacityFilter', label: 'Capacity', type: 'select', options: ['16GB', '32GB', '64GB', '128GB+'] },
+          { id: 'speedFilter', label: 'Speed', type: 'select', options: ['4800+', '5200+', '5600+', '6000+', '6400+'] }
         ];
 
       case 'storage':
         return [
           ...baseFilters,
-          { id: 'type', label: 'Type', type: 'select', options: ['NVMe SSD', 'SATA SSD', 'HDD'] },
-          { id: 'capacity', label: 'Capacity', type: 'select', options: ['500GB+', '1TB+', '2TB+', '4TB+'] },
-          { id: 'interface', label: 'Interface', type: 'select', options: ['PCIe 4.0', 'PCIe 3.0', 'SATA 6Gb/s'] }
+          { id: 'Type', label: 'Type', type: 'select', options: ['NVMe SSD', 'SATA SSD', 'HDD'] },
+          { id: 'capacityFilter', label: 'Capacity', type: 'select', options: ['500GB+', '1TB+', '2TB+', '4TB+'] },
+          { id: 'Interface', label: 'Interface', type: 'select', options: ['PCIe 4.0', 'PCIe 3.0', 'SATA 6Gb/s'] }
         ];
 
       case 'psu':
         return [
           ...baseFilters,
-          { id: 'wattage', label: 'Wattage', type: 'select', options: ['500W+', '650W+', '750W+', '850W+', '1000W+'] },
-          { id: 'rating', label: 'Efficiency', type: 'select', options: ['80+ Bronze', '80+ Gold', '80+ Platinum', '80+ Titanium'] },
-          { id: 'modularity', label: 'Modularity', type: 'select', options: ['Non-modular', 'Semi-modular', 'Full modular'] }
+          { id: 'wattageFilter', label: 'Wattage', type: 'select', options: ['500W+', '650W+', '750W+', '850W+', '1000W+'] },
+          { id: 'Rating', label: 'Efficiency', type: 'select', options: ['80+ Bronze', '80+ Gold', '80+ Platinum', '80+ Titanium'] },
+          { id: 'Modularity', label: 'Modularity', type: 'select', options: ['Non-modular', 'Semi-modular', 'Full modular'] }
         ];
 
       case 'case':
         return [
           ...baseFilters,
-          { id: 'formFactor', label: 'Form Factor', type: 'select', options: ['Mini-ITX', 'Micro-ATX', 'ATX', 'E-ATX'] },
-          { id: 'color', label: 'Color', type: 'select', options: ['Black', 'White', 'RGB'] },
-          { id: 'sidePanel', label: 'Side Panel', type: 'select', options: ['Tempered Glass', 'Acrylic', 'Solid'] }
+          { id: 'Form Factor', label: 'Form Factor', type: 'select', options: ['Mini-ITX', 'Micro-ATX', 'ATX', 'E-ATX'] },
+          { id: 'Color', label: 'Color', type: 'select', options: ['Black', 'White', 'RGB'] },
+          { id: 'Side Panel', label: 'Side Panel', type: 'select', options: ['Tempered Glass', 'Acrylic', 'Solid'] }
         ];
 
       case 'cooler':
         return [
           ...baseFilters,
-          { id: 'type', label: 'Type', type: 'select', options: ['Air Cooler', 'Liquid Cooler'] },
-          { id: 'socket', label: 'Socket Support', type: 'select', options: ['AM5', 'AM4', 'LGA1700', 'All'] }
+          { id: 'Type', label: 'Type', type: 'select', options: ['Air Cooler', 'Liquid Cooler'] },
+          { id: 'Socket Support', label: 'Socket Support', type: 'select', options: ['AM5', 'AM4', 'LGA1700', 'All'] }
         ];
 
       default:
         return baseFilters;
     }
+  };
+
+  // Helper function to extract numeric value from spec string
+  const extractNumericValue = (specValue: string | number | boolean): number => {
+    if (typeof specValue === 'number') return specValue;
+    if (typeof specValue === 'boolean') return specValue ? 1 : 0;
+
+    const str = String(specValue);
+    const match = str.match(/\d+/);
+    return match ? parseInt(match[0], 10) : 0;
   };
 
   // Get components based on selected category and filters
@@ -167,7 +233,10 @@ export default function ExploreScreen() {
     if (searchQuery.trim()) {
       components = components.filter(component =>
         component.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        component.type.toLowerCase().includes(searchQuery.toLowerCase())
+        component.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        Object.values(component.specs).some(value =>
+          String(value).toLowerCase().includes(searchQuery.toLowerCase())
+        )
       );
     }
 
@@ -183,31 +252,59 @@ export default function ExploreScreen() {
 
     // Apply custom filters based on category
     Object.entries(filters).forEach(([key, value]) => {
-      if (value) {
+      if (value && components.length > 0) {
         components = components.filter(component => {
-          const specValue = component.specs[key];
-          if (!specValue) return false;
-
-          // Handle different filter types
-          if (key === 'capacity' && value.endsWith('+')) {
-            const minValue = parseInt(value);
-            const compValue = parseInt(String(specValue));
-            return compValue >= minValue;
+          // Handle special filter cases
+          if (key === 'coreCountFilter' && value.endsWith('+')) {
+            const minCores = parseInt(value);
+            const specValue = component.specs['Core Count'];
+            const coreCount = extractNumericValue(specValue);
+            return coreCount >= minCores;
           }
 
-          if (key === 'speed' && value.endsWith('+')) {
+          if (key === 'vramFilter' && value.endsWith('+')) {
+            const minVRAM = parseInt(value);
+            const specValue = component.specs['VRAM'];
+            const vram = extractNumericValue(specValue);
+            return vram >= minVRAM;
+          }
+
+          if (key === 'capacityFilter' && value.endsWith('+')) {
+            const minCapacity = parseInt(value);
+            const specValue = component.specs['Capacity'] || component.specs['Size'];
+            const capacity = extractNumericValue(specValue);
+            return capacity >= minCapacity;
+          }
+
+          if (key === 'speedFilter' && value.endsWith('+')) {
             const minSpeed = parseInt(value);
-            const compSpeed = parseInt(String(specValue));
-            return compSpeed >= minSpeed;
+            const specValue = component.specs['Speed'];
+            const speed = extractNumericValue(specValue);
+            return speed >= minSpeed;
           }
 
-          if (key === 'wattage' && value.endsWith('+')) {
+          if (key === 'wattageFilter' && value.endsWith('+')) {
             const minWattage = parseInt(value);
-            const compWattage = parseInt(String(specValue));
-            return compWattage >= minWattage;
+            const specValue = component.specs['Wattage'];
+            const wattage = extractNumericValue(specValue);
+            return wattage >= minWattage;
           }
 
-          return String(specValue).includes(value);
+          if (key === 'ramTypeFilter') {
+            const specValue = component.specs['Type'] || component.specs['RAM Type'];
+            return String(specValue).includes(value);
+          }
+
+          // Direct spec matching
+          const specValue = component.specs[key];
+          if (specValue === undefined) return false;
+
+          // For exact matches (like Socket, Manufacturer, etc.)
+          if (typeof specValue === 'string') {
+            return specValue.includes(value) || value.includes(specValue);
+          }
+
+          return String(specValue) === String(value);
         });
       }
     });
@@ -272,6 +369,7 @@ export default function ExploreScreen() {
   // Reset filters when category changes
   useEffect(() => {
     setFilters({});
+    setSearchQuery('');
   }, [selectedCategory]);
 
   return (
@@ -329,13 +427,18 @@ export default function ExploreScreen() {
                 { translateY: titleTranslateY }
               ]
             }}>
-              <Text style={styles.compactTitle}>Browse</Text>
+              <Text style={styles.compactTitle}>
+                {selectedCategory === 'all' ? 'Browse' : selectedCategory.toUpperCase()}
+              </Text>
             </Animated.View>
 
             <View style={styles.compactHeaderRight}>
               <TouchableOpacity
                 style={styles.compactSearchButton}
-                onPress={scrollToTop}
+                onPress={() => {
+                  // Focus on search input or open search
+                  flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+                }}
               >
                 <Ionicons name="search" size={20} color="#00FFFF" />
               </TouchableOpacity>
@@ -378,7 +481,9 @@ export default function ExploreScreen() {
             <View style={styles.headerContent}>
               <Text style={styles.title}>Browse Components</Text>
               <Text style={styles.subtitle}>
-                Explore and compare PC components
+                {selectedCategory === 'all'
+                  ? 'Explore and compare PC components'
+                  : `Browse ${selectedCategory.toUpperCase()} components`}
               </Text>
             </View>
 
@@ -387,7 +492,7 @@ export default function ExploreScreen() {
               <Ionicons name="search" size={18} color="#666" />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search components..."
+                placeholder={`Search ${selectedCategory === 'all' ? 'components' : selectedCategory}...`}
                 placeholderTextColor="#666"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -489,10 +594,10 @@ export default function ExploreScreen() {
             <Text style={styles.filterButtonText}>Filters</Text>
           </TouchableOpacity>
 
-          {Object.keys(filters).length > 0 && (
+          {Object.keys(filters).filter(key => filters[key] !== null).length > 0 && (
             <View style={styles.activeFiltersBadge}>
               <Text style={styles.activeFiltersText}>
-                {Object.keys(filters).length}
+                {Object.keys(filters).filter(key => filters[key] !== null).length}
               </Text>
             </View>
           )}
@@ -593,6 +698,15 @@ export default function ExploreScreen() {
           )
         }
         scrollEventThrottle={16}
+        ListHeaderComponent={
+          filteredComponents.length > 0 ? (
+            <Text style={styles.gridTitle}>
+              {selectedCategory === 'all'
+                ? 'All Components'
+                : `${selectedCategory.toUpperCase()} (${filteredComponents.length})`}
+            </Text>
+          ) : null
+        }
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.componentCard}
@@ -612,20 +726,17 @@ export default function ExploreScreen() {
                 <Text style={styles.stockText}>{item.stock}</Text>
               </View>
 
-              {/* Component Image - Fixed with safe property access */}
+              {/* Component Image */}
               <View style={styles.imageContainer}>
                 {'image' in item && item.image ? (
                   <Image
                     source={{ uri: item.image }}
                     style={styles.componentImage}
                     resizeMode="cover"
-                    onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
                   />
                 ) : (
                   <View style={styles.imagePlaceholder}>
-                    <Text style={styles.imageText}>
-                      {item.type.charAt(0).toUpperCase()}
-                    </Text>
+                    <Ionicons name="hardware-chip-outline" size={32} color="rgba(255,255,255,0.2)" />
                   </View>
                 )}
               </View>
@@ -661,8 +772,13 @@ export default function ExploreScreen() {
                 <TouchableOpacity
                   style={styles.compareIconButton}
                   onPress={() => handleAddToCompare(item)}
+                  disabled={compareProducts.some(p => p.id === item.id)}
                 >
-                  <Ionicons name="git-compare" size={14} color="#00FFFF" />
+                  <Ionicons
+                    name="git-compare"
+                    size={14}
+                    color={compareProducts.some(p => p.id === item.id) ? '#666' : '#00FFFF'}
+                  />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -729,7 +845,10 @@ export default function ExploreScreen() {
                     <TextInput
                       style={styles.priceInput}
                       value={priceRange[0].toString()}
-                      onChangeText={(text) => setPriceRange([parseInt(text) || 0, priceRange[1]])}
+                      onChangeText={(text) => {
+                        const value = parseInt(text) || 0;
+                        setPriceRange([Math.min(value, priceRange[1]), priceRange[1]]);
+                      }}
                       keyboardType="numeric"
                       placeholder="0"
                       placeholderTextColor="#666"
@@ -741,7 +860,10 @@ export default function ExploreScreen() {
                     <TextInput
                       style={styles.priceInput}
                       value={priceRange[1].toString()}
-                      onChangeText={(text) => setPriceRange([priceRange[0], parseInt(text) || 100000])}
+                      onChangeText={(text) => {
+                        const value = parseInt(text) || 100000;
+                        setPriceRange([priceRange[0], Math.max(value, priceRange[0])]);
+                      }}
                       keyboardType="numeric"
                       placeholder="100000"
                       placeholderTextColor="#666"
@@ -778,7 +900,6 @@ export default function ExploreScreen() {
                   {categoryFilters
                     .filter(filter => filter.id !== 'inStock')
                     .map(filter => {
-                      // Type guard to check if filter has options
                       const hasOptions = 'options' in filter && filter.options;
 
                       if (!hasOptions) return null;
@@ -1070,6 +1191,13 @@ const styles = StyleSheet.create({
     paddingTop: HEADER_EXPANDED_HEIGHT + 60,
     padding: spacing.lg,
     paddingBottom: spacing.xxl,
+  },
+  gridTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFF',
+    marginBottom: spacing.md,
+    marginLeft: spacing.xs,
   },
   componentCard: {
     width: CARD_WIDTH,

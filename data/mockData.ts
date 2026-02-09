@@ -360,7 +360,8 @@ export const gpuData: ComponentItem[] = [
     specs: {
       Chipset: "GeForce RTX 4090",
       "Memory Type": "GDDR6X",
-      "Memory Size": "24 GB",
+      VRAM: "24GB", // Changed from vramFilter to VRAM
+      "Memory Size": "24GB",
       Interface: "PCIe 4.0 x16",
       Manufacturer: "NVIDIA",
       Color: "BLACK",
@@ -372,6 +373,7 @@ export const gpuData: ComponentItem[] = [
       "DisplayPort Outputs": 3,
       "HDMI Outputs": 1,
       "Power Connectors": "16-pin",
+      Series: "RTX 40 Series", // Added for series filtering
     },
     stock: "In stock",
     stockCount: 12,
@@ -388,7 +390,8 @@ export const gpuData: ComponentItem[] = [
     specs: {
       Chipset: "Radeon RX 7900 XTX",
       "Memory Type": "GDDR6",
-      "Memory Size": "24 GB",
+      VRAM: "24GB", // Changed from "Memory Size" to VRAM
+      "Memory Size": "24GB",
       Interface: "PCIe 4.0 x16",
       Manufacturer: "AMD",
       Color: "BLACK",
@@ -400,6 +403,7 @@ export const gpuData: ComponentItem[] = [
       "DisplayPort Outputs": 2,
       "HDMI Outputs": 2,
       "Power Connectors": "2x 8-pin",
+      Series: "RX 7000 Series", // Added for series filtering
     },
     stock: "In stock",
     stockCount: 15,
@@ -416,7 +420,8 @@ export const gpuData: ComponentItem[] = [
     specs: {
       Chipset: "GeForce RTX 4080 Super",
       "Memory Type": "GDDR6X",
-      "Memory Size": "16 GB",
+      VRAM: "16GB", // Changed from "Memory Size" to VRAM
+      "Memory Size": "16GB",
       Interface: "PCIe 4.0 x16",
       Manufacturer: "NVIDIA",
       Color: "BLACK",
@@ -428,6 +433,7 @@ export const gpuData: ComponentItem[] = [
       "DisplayPort Outputs": 3,
       "HDMI Outputs": 1,
       "Power Connectors": "16-pin",
+      Series: "RTX 40 Series", // Added for series filtering
     },
     stock: "In stock",
     stockCount: 10,
@@ -444,7 +450,8 @@ export const gpuData: ComponentItem[] = [
     specs: {
       Chipset: "GeForce RTX 4070 Ti Super",
       "Memory Type": "GDDR6X",
-      "Memory Size": "16 GB",
+      VRAM: "16GB", // Changed from "Memory Size" to VRAM
+      "Memory Size": "16GB",
       Interface: "PCIe 4.0 x16",
       Manufacturer: "NVIDIA",
       Color: "BLACK",
@@ -456,6 +463,7 @@ export const gpuData: ComponentItem[] = [
       "DisplayPort Outputs": 3,
       "HDMI Outputs": 1,
       "Power Connectors": "16-pin",
+      Series: "RTX 40 Series", // Added for series filtering
     },
     stock: "In stock",
     stockCount: 18,
@@ -472,7 +480,8 @@ export const gpuData: ComponentItem[] = [
     specs: {
       Chipset: "Radeon RX 7800 XT",
       "Memory Type": "GDDR6",
-      "Memory Size": "16 GB",
+      VRAM: "16GB", // Changed from "Memory Size" to VRAM
+      "Memory Size": "16GB",
       Interface: "PCIe 4.0 x16",
       Manufacturer: "AMD",
       Color: "BLACK",
@@ -484,9 +493,104 @@ export const gpuData: ComponentItem[] = [
       "DisplayPort Outputs": 2,
       "HDMI Outputs": 2,
       "Power Connectors": "2x 8-pin",
+      Series: "RX 7000 Series", // Added for series filtering
     },
     stock: "In stock",
     stockCount: 22,
+    quantity: 1,
+  },
+  {
+    id: "gpu-6",
+    name: "NVIDIA GeForce RTX 3080 10GB",
+    type: "gpu",
+    category: "gpu",
+    image:
+      "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=400&h=400&fit=crop&crop=center",
+    price: 48200.0,
+    specs: {
+      Chipset: "GeForce RTX 3080",
+      "Memory Type": "GDDR6X",
+      VRAM: "10GB",
+      "Memory Size": "10GB",
+      Interface: "PCIe 4.0 x16",
+      Manufacturer: "NVIDIA",
+      Color: "BLACK",
+      TDP: "320 W",
+      "Card Length": "285 mm",
+      "Boost Clock": "1710 MHz",
+      "Base Clock": "1440 MHz",
+      "Memory Interface": "320-bit",
+      "DisplayPort Outputs": 3,
+      "HDMI Outputs": 1,
+      "Power Connectors": "2x 8-pin",
+      Series: "RTX 30 Series",
+    },
+    stock: "In stock",
+    stockCount: 8,
+    quantity: 1,
+  },
+
+  // Add RTX 20 Series example
+  {
+    id: "gpu-7",
+    name: "NVIDIA GeForce RTX 2080 Ti 11GB",
+    type: "gpu",
+    category: "gpu",
+    image:
+      "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=400&h=400&fit=crop&crop=center",
+    price: 35200.0,
+    specs: {
+      Chipset: "GeForce RTX 2080 Ti",
+      "Memory Type": "GDDR6",
+      VRAM: "11GB",
+      "Memory Size": "11GB",
+      Interface: "PCIe 3.0 x16",
+      Manufacturer: "NVIDIA",
+      Color: "BLACK",
+      TDP: "250 W",
+      "Card Length": "270 mm",
+      "Boost Clock": "1545 MHz",
+      "Base Clock": "1350 MHz",
+      "Memory Interface": "352-bit",
+      "DisplayPort Outputs": 3,
+      "HDMI Outputs": 1,
+      "Power Connectors": "2x 8-pin",
+      Series: "RTX 20 Series",
+    },
+    stock: "In stock",
+    stockCount: 5,
+    quantity: 1,
+  },
+
+  // Add RX 6000 Series example
+  {
+    id: "gpu-8",
+    name: "AMD Radeon RX 6800 XT 16GB",
+    type: "gpu",
+    category: "gpu",
+    image:
+      "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?w=400&h=400&fit=crop&crop=center",
+    price: 38200.0,
+    specs: {
+      Chipset: "Radeon RX 6800 XT",
+      "Memory Type": "GDDR6",
+      VRAM: "16GB",
+      "Memory Size": "16GB",
+      Interface: "PCIe 4.0 x16",
+      Manufacturer: "AMD",
+      Color: "BLACK",
+      TDP: "300 W",
+      "Card Length": "267 mm",
+      "Boost Clock": "2250 MHz",
+      "Base Clock": "1825 MHz",
+      "Memory Interface": "256-bit",
+      "DisplayPort Outputs": 2,
+      "HDMI Outputs": 2,
+      "Power Connectors": "2x 8-pin",
+      Series: "RX 6000 Series",
+    },
+    stock: "In stock",
+    stockCount: 12,
     quantity: 1,
   },
 ];
