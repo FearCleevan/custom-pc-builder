@@ -612,13 +612,14 @@ export default function ExploreScreen() {
                 <Text style={styles.stockText}>{item.stock}</Text>
               </View>
 
-              {/* Component Image */}
+              {/* Component Image - Fixed with safe property access */}
               <View style={styles.imageContainer}>
-                {item.image ? (
-                  <Image 
-                    source={{ uri: item.image }} 
+                {'image' in item && item.image ? (
+                  <Image
+                    source={{ uri: item.image }}
                     style={styles.componentImage}
                     resizeMode="cover"
+                    onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
                   />
                 ) : (
                   <View style={styles.imagePlaceholder}>
@@ -776,30 +777,37 @@ export default function ExploreScreen() {
                   </Text>
                   {categoryFilters
                     .filter(filter => filter.id !== 'inStock')
-                    .map(filter => (
-                      <View key={filter.id} style={styles.filterGroup}>
-                        <Text style={styles.filterGroupLabel}>{filter.label}</Text>
-                        <View style={styles.filterOptions}>
-                          {filter.options?.map(option => (
-                            <TouchableOpacity
-                              key={option}
-                              style={[
-                                styles.filterOption,
-                                filters[filter.id] === option && styles.filterOptionActive
-                              ]}
-                              onPress={() => handleFilterChange(filter.id, option)}
-                            >
-                              <Text style={[
-                                styles.filterOptionText,
-                                filters[filter.id] === option && styles.filterOptionTextActive
-                              ]}>
-                                {option}
-                              </Text>
-                            </TouchableOpacity>
-                          ))}
+                    .map(filter => {
+                      // Type guard to check if filter has options
+                      const hasOptions = 'options' in filter && filter.options;
+
+                      if (!hasOptions) return null;
+
+                      return (
+                        <View key={filter.id} style={styles.filterGroup}>
+                          <Text style={styles.filterGroupLabel}>{filter.label}</Text>
+                          <View style={styles.filterOptions}>
+                            {filter.options.map(option => (
+                              <TouchableOpacity
+                                key={option}
+                                style={[
+                                  styles.filterOption,
+                                  filters[filter.id] === option && styles.filterOptionActive
+                                ]}
+                                onPress={() => handleFilterChange(filter.id, option)}
+                              >
+                                <Text style={[
+                                  styles.filterOptionText,
+                                  filters[filter.id] === option && styles.filterOptionTextActive
+                                ]}>
+                                  {option}
+                                </Text>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
                         </View>
-                      </View>
-                    ))}
+                      );
+                    })}
                 </View>
               )}
             </ScrollView>

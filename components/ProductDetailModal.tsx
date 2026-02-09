@@ -1,8 +1,4 @@
-import { allComponents } from '@/data/mockData';
-import { useBuildStore } from '@/store/useBuildStore';
-import { useCompareStore } from '@/store/useCompareStore';
-import { spacing } from '@/theme';
-import { ComponentItem } from '@/types/component';
+// ProductDetailModal.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
@@ -10,6 +6,7 @@ import {
   Alert,
   Dimensions,
   FlatList,
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -18,15 +15,21 @@ import {
   View,
 } from 'react-native';
 
+import { allComponents } from '@/data/mockData';
+import { useBuildStore } from '@/store/useBuildStore';
+import { useCompareStore } from '@/store/useCompareStore';
+import { spacing } from '@/theme';
+import { ComponentItem } from '@/types/component';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH = (SCREEN_WIDTH - spacing.lg * 3) / 2;
+
 interface ProductDetailModalProps {
   visible: boolean;
   product: ComponentItem | null;
   onClose: () => void;
   onProductChange?: (product: ComponentItem) => void;
 }
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const CARD_WIDTH = (SCREEN_WIDTH - spacing.lg * 3) / 2;
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   visible,
@@ -137,6 +140,9 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     product: ComponentItem, 
     onPress: (product: ComponentItem) => void 
   }) => {
+    // Check if product has image property
+    const hasImage = product.image && product.image.length > 0;
+    
     return (
       <TouchableOpacity
         style={styles.productCard}
@@ -156,11 +162,22 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <Text style={styles.productCardStockText}>{product.stock}</Text>
           </View>
 
-          {/* Product Image/Icon */}
-          <View style={styles.productCardImagePlaceholder}>
-            <Text style={styles.productCardImageText}>
-              {product.type.charAt(0).toUpperCase()}
-            </Text>
+          {/* Product Image */}
+          <View style={styles.productCardImageContainer}>
+            {hasImage ? (
+              <Image 
+                source={{ uri: product.image }} 
+                style={styles.productCardImage}
+                resizeMode="contain"
+                onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
+              />
+            ) : (
+              <View style={styles.productCardImagePlaceholder}>
+                <Text style={styles.productCardImageText}>
+                  {product.type.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Product Name */}
@@ -185,6 +202,34 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           </Text>
         </LinearGradient>
       </TouchableOpacity>
+    );
+  };
+
+  // Main Product Image Component
+  const ProductMainImage = () => {
+    // Check if main product has image property
+    const hasImage = product.image && product.image.length > 0;
+    
+    return (
+      <View style={styles.imageContainer}>
+        {hasImage ? (
+          <Image 
+            source={{ uri: product.image }} 
+            style={styles.productMainImage}
+            resizeMode="contain"
+            onError={(e) => console.log('Main image load error:', e.nativeEvent.error)}
+          />
+        ) : (
+          <LinearGradient
+            colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
+            style={styles.imagePlaceholder}
+          >
+            <Text style={styles.imageText}>
+              {product.type.charAt(0).toUpperCase()}
+            </Text>
+          </LinearGradient>
+        )}
+      </View>
     );
   };
 
@@ -232,16 +277,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             showsVerticalScrollIndicator={false}
           >
             {/* Product Image */}
-            <View style={styles.imageContainer}>
-              <LinearGradient
-                colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
-                style={styles.imagePlaceholder}
-              >
-                <Text style={styles.imageText}>
-                  {product.type.charAt(0).toUpperCase()}
-                </Text>
-              </LinearGradient>
-            </View>
+            <ProductMainImage />
 
             {/* Product Info */}
             <View style={styles.infoSection}>
@@ -259,7 +295,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   ]} />
                   <Text style={[
                     styles.stockText,
-                    { color: product.stock === 'In stock' ? '#00FF00' : '#FF0000' }
+                    { color: product.stock === 'In stock' ? '#00FFFF' : '#FF4444' }
                   ]}>
                     {product.stock}
                   </Text>
@@ -462,6 +498,15 @@ const styles = StyleSheet.create({
   imageContainer: {
     alignItems: 'center',
     padding: spacing.xl,
+    height: SCREEN_WIDTH * 0.7,
+    justifyContent: 'center',
+  },
+  productMainImage: {
+    width: '100%',
+    height: '100%',
+    maxWidth: SCREEN_WIDTH * 0.7,
+    maxHeight: SCREEN_WIDTH * 0.7,
+    borderRadius: 20,
   },
   imagePlaceholder: {
     width: SCREEN_WIDTH * 0.7,
@@ -706,7 +751,7 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontWeight: '600',
   },
-  productCardImagePlaceholder: {
+  productCardImageContainer: {
     width: '100%',
     height: 50,
     borderRadius: 6,
@@ -714,6 +759,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xs,
+    overflow: 'hidden',
+  },
+  productCardImage: {
+    width: '100%',
+    height: '100%',
+  },
+  productCardImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   productCardImageText: {
     fontSize: 20,

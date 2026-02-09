@@ -2,9 +2,13 @@ export interface ComponentItem {
   id: string;
   name: string;
   type: string;
+  category?: string; // Add this - optional since it might be the same as type
+  image?: string;
   price: number;
+  specs: Record<string, string | number>;
   stock: string;
-  specs: Record<string, any>;
+  stockCount?: number; // Add this - optional
+  quantity?: number; // Add this - optional
   store?: string;
   has3D?: boolean;
 }
