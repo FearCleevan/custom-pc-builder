@@ -5,7 +5,7 @@ import {
   getComponentsByType
 } from '@/data/mockData';
 import { useCompareStore } from '@/store/useCompareStore';
-import { spacing } from '@/theme';
+import { THEME } from '@/theme/indexs';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -28,8 +28,9 @@ import {
 import { ProductDetailModal } from '@/components/ProductDetailModal';
 import { ToastNotification } from '@/components/ToastNotification';
 
+const { colors: COLORS, spacing: SPACING, borderRadius: BORDER_RADIUS, shadows: SHADOWS } = THEME;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = (SCREEN_WIDTH - spacing.lg * 3) / 2;
+const CARD_WIDTH = (SCREEN_WIDTH - SPACING.lg * 3) / 2;
 const HEADER_EXPANDED_HEIGHT = 130;
 const HEADER_COLLAPSED_HEIGHT = 80;
 
@@ -545,7 +546,7 @@ export default function ExploreScreen() {
       {/* Animated Header */}
       <Animated.View style={[styles.headerContainer, { height: headerHeight }]}>
         <LinearGradient
-          colors={['#000000', '#1a1a2e']}
+          colors={THEME.colors.gradients.dark}
           style={styles.headerGradient}
         >
           {/* Compact Header (shown when scrolled) */}
@@ -571,7 +572,7 @@ export default function ExploreScreen() {
               style={styles.menuButton}
               onPress={() => setShowFilters(true)}
             >
-              <Ionicons name="filter" size={22} color="#FF00FF" />
+              <Ionicons name="filter" size={22} color={COLORS.primary} />
             </TouchableOpacity>
 
             <Animated.View style={{
@@ -592,7 +593,7 @@ export default function ExploreScreen() {
                   flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
                 }}
               >
-                <Ionicons name="search" size={20} color="#00FFFF" />
+                <Ionicons name="search" size={20} color={COLORS.secondary} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -605,9 +606,9 @@ export default function ExploreScreen() {
                   }
                 }}
               >
-                <Ionicons name="git-compare" size={20} color="#00FFFF" />
+                <Ionicons name="git-compare" size={20} color={COLORS.secondary} />
                 {compareProducts.length > 0 && (
-                  <View style={styles.compareBadge}>
+                  <View style={[styles.compareBadge, { backgroundColor: COLORS.secondary }]}>
                     <Text style={styles.compareBadgeText}>{compareProducts.length}</Text>
                   </View>
                 )}
@@ -641,17 +642,17 @@ export default function ExploreScreen() {
 
             {/* Search Bar */}
             <View style={styles.searchContainer}>
-              <Ionicons name="search" size={18} color="#666" />
+              <Ionicons name="search" size={18} color={COLORS.text.tertiary} />
               <TextInput
                 style={styles.searchInput}
                 placeholder={`Search ${selectedCategory === 'all' ? 'components' : selectedCategory}...`}
-                placeholderTextColor="#666"
+                placeholderTextColor={COLORS.text.tertiary}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
               />
               {searchQuery ? (
                 <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <Ionicons name="close-circle" size={18} color="#666" />
+                  <Ionicons name="close-circle" size={18} color={COLORS.text.tertiary} />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -701,7 +702,7 @@ export default function ExploreScreen() {
                   <Ionicons
                     name={category.icon as any}
                     size={14}
-                    color={selectedCategory === category.id ? '#FF00FF' : 'rgba(255,255,255,0.7)'}
+                    color={selectedCategory === category.id ? COLORS.primary : COLORS.text.tertiary}
                     style={styles.categoryIcon}
                   />
                   <Text style={[
@@ -742,13 +743,13 @@ export default function ExploreScreen() {
             style={styles.filterButton}
             onPress={() => setShowFilters(true)}
           >
-            <Ionicons name="filter" size={18} color="#FF00FF" />
+            <Ionicons name="filter" size={18} color={COLORS.primary} />
             <Text style={styles.filterButtonText}>Filters</Text>
           </TouchableOpacity>
 
           {Object.keys(filters).filter(key => filters[key] !== null).length > 0 && (
-            <View style={styles.activeFiltersBadge}>
-              <Text style={styles.activeFiltersText}>
+            <View style={[styles.activeFiltersBadge, { backgroundColor: THEME.components.badge.primary.backgroundColor }]}>
+              <Text style={[styles.activeFiltersText, { color: THEME.components.badge.primary.textColor }]}>
                 {Object.keys(filters).filter(key => filters[key] !== null).length}
               </Text>
             </View>
@@ -776,7 +777,7 @@ export default function ExploreScreen() {
               {sortBy === 'price-low' ? 'Price ↑' :
                 sortBy === 'price-high' ? 'Price ↓' : 'Name'}
             </Text>
-            <Ionicons name="chevron-down" size={14} color="#666" />
+            <Ionicons name="chevron-down" size={14} color={COLORS.text.tertiary} />
           </TouchableOpacity>
         </View>
       </Animated.View>
@@ -827,7 +828,7 @@ export default function ExploreScreen() {
           onPress={scrollToTop}
         >
           <LinearGradient
-            colors={['#FF00FF', '#9400D3']}
+            colors={THEME.colors.gradients.primary}
             style={styles.scrollToTopGradient}
           >
             <Ionicons name="arrow-up" size={20} color="#FFF" />
@@ -865,17 +866,34 @@ export default function ExploreScreen() {
             onPress={() => handleComponentPress(item)}
             activeOpacity={0.8}
           >
-            <LinearGradient
-              colors={['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)']}
-              style={styles.cardGradient}
-            >
+            <View style={styles.cardContainer}>
               {/* Stock Badge */}
-              <View style={styles.stockBadge}>
+              <View style={[
+                styles.stockBadge,
+                {
+                  backgroundColor: item.stock === 'In stock'
+                    ? THEME.components.badge.success.backgroundColor
+                    : THEME.components.badge.danger.backgroundColor
+                }
+              ]}>
                 <View style={[
                   styles.stockDot,
-                  { backgroundColor: item.stock === 'In stock' ? '#00FF00' : '#FF0000' }
+                  {
+                    backgroundColor: item.stock === 'In stock'
+                      ? THEME.components.badge.success.textColor
+                      : THEME.components.badge.danger.textColor
+                  }
                 ]} />
-                <Text style={styles.stockText}>{item.stock}</Text>
+                <Text style={[
+                  styles.stockText,
+                  {
+                    color: item.stock === 'In stock'
+                      ? THEME.components.badge.success.textColor
+                      : THEME.components.badge.danger.textColor
+                  }
+                ]}>
+                  {item.stock}
+                </Text>
               </View>
 
               {/* Component Image */}
@@ -922,31 +940,50 @@ export default function ExploreScreen() {
               {/* Action Buttons */}
               <View style={styles.actionButtons}>
                 <TouchableOpacity
-                  style={styles.compareIconButton}
+                  style={[
+                    styles.compareIconButton,
+                    {
+                      backgroundColor: compareProducts.some(p => p.id === item.id)
+                        ? COLORS.text.disabled + '20'
+                        : THEME.components.badge.secondary.backgroundColor,
+                      borderColor: compareProducts.some(p => p.id === item.id)
+                        ? COLORS.text.disabled + '30'
+                        : THEME.components.badge.secondary.borderColor
+                    }
+                  ]}
                   onPress={() => handleAddToCompare(item)}
                   disabled={compareProducts.some(p => p.id === item.id)}
                 >
                   <Ionicons
                     name="git-compare"
                     size={14}
-                    color={compareProducts.some(p => p.id === item.id) ? '#666' : '#00FFFF'}
+                    color={compareProducts.some(p => p.id === item.id) ? COLORS.text.disabled : THEME.components.badge.secondary.textColor}
                   />
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.viewButton}
+                  style={[
+                    styles.viewButton,
+                    {
+                      backgroundColor: THEME.components.button.outline.backgroundColor,
+                      borderColor: THEME.components.button.outline.borderColor
+                    }
+                  ]}
                   onPress={() => handleComponentPress(item)}
                 >
-                  <Text style={styles.viewButtonText}>VIEW</Text>
-                  <Ionicons name="arrow-forward" size={10} color="#00FFFF" />
+                  <Text style={[
+                    styles.viewButtonText,
+                    { color: THEME.components.button.outline.textColor }
+                  ]}>VIEW</Text>
+                  <Ionicons name="arrow-forward" size={10} color={THEME.components.button.outline.textColor} />
                 </TouchableOpacity>
               </View>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="search-outline" size={64} color="#666" />
+            <Ionicons name="search-outline" size={64} color={COLORS.text.tertiary} />
             <Text style={styles.emptyStateText}>
               No components found
             </Text>
@@ -954,10 +991,15 @@ export default function ExploreScreen() {
               Try adjusting your filters or search
             </Text>
             <TouchableOpacity
-              style={styles.resetButton}
+              style={[styles.resetButton, { 
+                backgroundColor: THEME.components.button.outline.backgroundColor,
+                borderColor: THEME.components.button.outline.borderColor
+              }]}
               onPress={handleResetFilters}
             >
-              <Text style={styles.resetButtonText}>RESET ALL FILTERS</Text>
+              <Text style={[styles.resetButtonText, { color: THEME.components.button.outline.textColor }]}>
+                RESET ALL FILTERS
+              </Text>
             </TouchableOpacity>
           </View>
         }
@@ -973,7 +1015,7 @@ export default function ExploreScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <LinearGradient
-              colors={['#0a0a0f', '#1a1a2e']}
+              colors={THEME.colors.gradients.dark}
               style={styles.modalHeader}
             >
               <View style={styles.modalHeaderLeft}>
@@ -1003,7 +1045,7 @@ export default function ExploreScreen() {
                       }}
                       keyboardType="numeric"
                       placeholder="0"
-                      placeholderTextColor="#666"
+                      placeholderTextColor={COLORS.text.tertiary}
                     />
                   </View>
                   <Text style={styles.priceSeparator}>-</Text>
@@ -1018,7 +1060,7 @@ export default function ExploreScreen() {
                       }}
                       keyboardType="numeric"
                       placeholder="100000"
-                      placeholderTextColor="#666"
+                      placeholderTextColor={COLORS.text.tertiary}
                     />
                   </View>
                 </View>
@@ -1091,7 +1133,7 @@ export default function ExploreScreen() {
                 onPress={() => setShowFilters(false)}
               >
                 <LinearGradient
-                  colors={['#FF00FF', '#9400D3']}
+                  colors={THEME.colors.gradients.primary}
                   style={styles.applyButtonGradient}
                 >
                   <Text style={styles.applyButtonText}>APPLY FILTERS</Text>
@@ -1105,11 +1147,10 @@ export default function ExploreScreen() {
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0f',
+    backgroundColor: COLORS.background,
   },
   headerContainer: {
     position: 'absolute',
@@ -1127,36 +1168,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: SPACING.lg,
   },
   menuButton: {
-    padding: spacing.xs,
+    padding: SPACING.xs,
   },
   compactTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#FFF',
-    textShadowColor: 'rgba(255, 0, 255, 0.3)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
+    fontSize: THEME.typography.fontSizes.xl,
+    fontWeight: THEME.typography.fontWeights.black,
+    color: COLORS.text.primary,
+    letterSpacing: THEME.typography.letterSpacing.tight,
   },
   compactHeaderRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: SPACING.md,
   },
   compactSearchButton: {
-    padding: spacing.xs,
+    padding: SPACING.xs,
   },
   compareButton: {
     position: 'relative',
-    padding: spacing.xs,
+    padding: SPACING.xs,
   },
   compareBadge: {
     position: 'absolute',
     top: -2,
     right: -2,
-    backgroundColor: '#00FFFF',
     minWidth: 14,
     height: 14,
     borderRadius: 7,
@@ -1165,44 +1203,46 @@ const styles = StyleSheet.create({
   },
   compareBadgeText: {
     fontSize: 8,
-    color: '#0a0a0f',
-    fontWeight: '900',
+    color: COLORS.background,
+    fontWeight: THEME.typography.fontWeights.black,
   },
   expandedHeader: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: SPACING.lg,
   },
   headerContent: {
     marginBottom: 0,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#FFF',
+    fontSize: THEME.typography.fontSizes['3xl'],
+    fontWeight: THEME.typography.fontWeights.black,
+    color: COLORS.text.primary,
     marginBottom: 2,
-    textShadowColor: 'rgba(255, 0, 255, 0.3)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
+    letterSpacing: THEME.typography.letterSpacing.tight,
   },
   subtitle: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.6)',
-    letterSpacing: 0.5,
+    fontSize: THEME.typography.fontSizes.sm,
+    color: COLORS.text.secondary,
+    letterSpacing: THEME.typography.letterSpacing.wide,
+    fontWeight: THEME.typography.fontWeights.normal,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 10,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    marginTop: spacing.xs,
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: BORDER_RADIUS.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    marginTop: SPACING.xs,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   searchInput: {
     flex: 1,
-    color: '#FFF',
-    fontSize: 14,
-    marginLeft: spacing.sm,
-    paddingVertical: spacing.xs,
+    color: COLORS.text.primary,
+    fontSize: THEME.typography.fontSizes.md,
+    marginLeft: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    fontFamily: undefined, // Using system font
   },
   categorySection: {
     height: 40,
@@ -1212,34 +1252,34 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   categoryTabsContent: {
-    paddingHorizontal: spacing.lg,
-    gap: spacing.xs,
+    paddingHorizontal: SPACING.lg,
+    gap: SPACING.xs,
   },
   categoryTab: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.full,
+    backgroundColor: COLORS.surfaceLight,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    marginRight: spacing.xs,
+    borderColor: COLORS.border,
+    marginRight: SPACING.xs,
   },
   categoryTabActive: {
-    backgroundColor: 'rgba(255, 0, 255, 0.1)',
-    borderColor: '#FF00FF',
+    backgroundColor: THEME.components.badge.primary.backgroundColor,
+    borderColor: THEME.components.badge.primary.borderColor,
   },
   categoryIcon: {
-    marginRight: spacing.xs,
+    marginRight: SPACING.xs,
   },
   categoryTabText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.7)',
+    fontSize: THEME.typography.fontSizes.xs,
+    fontWeight: THEME.typography.fontWeights.semibold,
+    color: COLORS.text.tertiary,
   },
   categoryTabTextActive: {
-    color: '#FF00FF',
+    color: THEME.components.badge.primary.textColor,
   },
   filterBar: {
     position: 'absolute',
@@ -1249,52 +1289,53 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    backgroundColor: 'rgba(10, 10, 15, 0.8)',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.background + 'CC',
     zIndex: 90,
   },
   filterLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: SPACING.sm,
   },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: SPACING.xs,
   },
   filterButtonText: {
-    color: '#FF00FF',
-    fontSize: 12,
-    fontWeight: '600',
+    color: COLORS.primary,
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.semibold,
   },
   activeFiltersBadge: {
-    backgroundColor: 'rgba(255, 0, 255, 0.1)',
-    paddingHorizontal: spacing.xs,
+    paddingHorizontal: SPACING.xs,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.xs,
     minWidth: 20,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   activeFiltersText: {
-    fontSize: 9,
-    color: '#FF00FF',
-    fontWeight: '600',
+    fontSize: THEME.typography.fontSizes.xs,
+    fontWeight: THEME.typography.fontWeights.semibold,
   },
   filterRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: SPACING.md,
   },
   sortButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: SPACING.xs,
   },
   sortButtonText: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 12,
+    color: COLORS.text.secondary,
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.medium,
   },
   resultsBar: {
     position: 'absolute',
@@ -1304,63 +1345,64 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xs,
-    backgroundColor: 'rgba(10, 10, 15, 0.8)',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.xs,
+    backgroundColor: COLORS.background + 'CC',
     zIndex: 80,
   },
   resultsText: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.6)',
+    fontSize: THEME.typography.fontSizes.sm,
+    color: COLORS.text.secondary,
+    fontWeight: THEME.typography.fontWeights.medium,
   },
   resetLink: {
-    fontSize: 12,
-    color: '#FF00FF',
-    fontWeight: '600',
+    fontSize: THEME.typography.fontSizes.sm,
+    color: COLORS.primary,
+    fontWeight: THEME.typography.fontWeights.semibold,
   },
   scrollToTopButton: {
     position: 'absolute',
-    bottom: spacing.xl,
-    right: spacing.lg,
+    bottom: SPACING.xl,
+    right: SPACING.lg,
     zIndex: 99,
   },
   scrollToTopTouchable: {
-    borderRadius: 20,
+    borderRadius: BORDER_RADIUS.full,
     overflow: 'hidden',
-    shadowColor: '#FF00FF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
-    elevation: 5,
+    ...SHADOWS.primary,
   },
   scrollToTopGradient: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: BORDER_RADIUS.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
   grid: {
     paddingTop: HEADER_EXPANDED_HEIGHT + 60,
-    padding: spacing.lg,
-    paddingBottom: spacing.xxl,
+    padding: SPACING.lg,
+    paddingBottom: SPACING.xxl,
   },
   gridTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFF',
-    marginBottom: spacing.md,
-    marginLeft: spacing.xs,
+    fontSize: THEME.typography.fontSizes.lg,
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.text.primary,
+    marginBottom: SPACING.md,
+    marginLeft: SPACING.xs,
   },
   componentCard: {
     width: CARD_WIDTH,
-    marginRight: spacing.lg,
-    marginBottom: spacing.lg,
-    borderRadius: 12,
+    marginRight: SPACING.lg,
+    marginBottom: SPACING.lg,
+    borderRadius: BORDER_RADIUS.md,
     overflow: 'hidden',
+    backgroundColor: THEME.components.card.default.backgroundColor,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.sm,
   },
-  cardGradient: {
-    padding: spacing.sm,
+  cardContainer: {
+    padding: SPACING.sm,
     height: 260,
     justifyContent: 'space-between',
   },
@@ -1368,11 +1410,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    paddingHorizontal: spacing.xs,
+    paddingHorizontal: SPACING.xs,
     paddingVertical: 2,
-    borderRadius: 4,
-    marginBottom: spacing.xs,
+    borderRadius: BORDER_RADIUS.xs,
+    marginBottom: SPACING.xs,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   stockDot: {
     width: 5,
@@ -1381,19 +1424,20 @@ const styles = StyleSheet.create({
     marginRight: 3,
   },
   stockText: {
-    fontSize: 8,
-    color: '#FFF',
-    fontWeight: '600',
+    fontSize: THEME.typography.fontSizes.xs,
+    fontWeight: THEME.typography.fontWeights.semibold,
   },
   imageContainer: {
     width: '100%',
     height: 70,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: BORDER_RADIUS.sm,
+    backgroundColor: COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: SPACING.xs,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   componentImage: {
     width: '100%',
@@ -1405,39 +1449,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  imageText: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: 'rgba(255,255,255,0.2)',
-  },
   componentType: {
-    fontSize: 8,
-    color: 'rgba(255,255,255,0.5)',
-    fontWeight: '600',
-    letterSpacing: 0.5,
+    fontSize: THEME.typography.fontSizes.xs,
+    color: COLORS.text.tertiary,
+    fontWeight: THEME.typography.fontWeights.semibold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
     marginBottom: 2,
   },
   componentName: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFF',
-    lineHeight: 14,
-    marginBottom: spacing.xs,
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.semibold,
+    color: COLORS.text.primary,
+    lineHeight: THEME.typography.lineHeights.tight * THEME.typography.fontSizes.sm,
+    marginBottom: SPACING.xs,
     flex: 1,
   },
   specsPreview: {
-    marginBottom: spacing.xs,
+    marginBottom: SPACING.xs,
     gap: 1,
   },
   specPreviewText: {
-    fontSize: 9,
-    color: 'rgba(255,255,255,0.5)',
+    fontSize: THEME.typography.fontSizes.xs,
+    color: COLORS.text.tertiary,
+    fontWeight: THEME.typography.fontWeights.normal,
   },
   componentPrice: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FF00FF',
-    marginBottom: spacing.xs,
+    fontSize: THEME.typography.fontSizes.lg,
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.primary,
+    marginBottom: SPACING.xs,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -1445,143 +1485,138 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   compareIconButton: {
-    padding: spacing.xs,
-    backgroundColor: 'rgba(0, 255, 255, 0.1)',
-    borderRadius: 4,
+    padding: SPACING.xs,
+    borderRadius: BORDER_RADIUS.xs,
     borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.2)',
   },
   viewButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 255, 255, 0.1)',
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: SPACING.sm,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
     gap: 2,
     borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.2)',
   },
   viewButtonText: {
-    fontSize: 8,
-    color: '#00FFFF',
-    fontWeight: '600',
-    letterSpacing: 0.5,
+    fontSize: THEME.typography.fontSizes.xs,
+    fontWeight: THEME.typography.fontWeights.semibold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.xxl,
-    paddingHorizontal: spacing.xl,
+    paddingVertical: SPACING.xxl,
+    paddingHorizontal: SPACING.xl,
     marginTop: HEADER_EXPANDED_HEIGHT + 50,
   },
   emptyStateText: {
-    fontSize: 18,
-    color: '#FFF',
-    fontWeight: '600',
-    marginTop: spacing.md,
-    marginBottom: spacing.xs,
+    fontSize: THEME.typography.fontSizes.xl,
+    color: COLORS.text.primary,
+    fontWeight: THEME.typography.fontWeights.semibold,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.xs,
   },
   emptyStateSubtext: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.6)',
+    fontSize: THEME.typography.fontSizes.md,
+    color: COLORS.text.secondary,
     textAlign: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: SPACING.lg,
+    lineHeight: THEME.typography.lineHeights.normal * THEME.typography.fontSizes.md,
   },
   resetButton: {
-    backgroundColor: 'rgba(255, 0, 255, 0.1)',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: 12,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
-    borderColor: 'rgba(255, 0, 255, 0.3)',
   },
   resetButtonText: {
-    color: '#FF00FF',
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 1,
+    fontSize: THEME.typography.fontSizes.md,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: COLORS.overlay,
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#0a0a0f',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    backgroundColor: COLORS.background,
+    borderTopLeftRadius: BORDER_RADIUS.xl,
+    borderTopRightRadius: BORDER_RADIUS.xl,
     maxHeight: '80%',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: spacing.lg,
+    padding: SPACING.lg,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+    borderBottomColor: COLORS.border,
   },
   modalHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: SPACING.md,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#FFF',
+    fontSize: THEME.typography.fontSizes['2xl'],
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.text.primary,
+    letterSpacing: THEME.typography.letterSpacing.tight,
   },
   resetAllText: {
-    color: '#FF00FF',
-    fontSize: 14,
-    fontWeight: '600',
+    color: COLORS.primary,
+    fontSize: THEME.typography.fontSizes.md,
+    fontWeight: THEME.typography.fontWeights.semibold,
   },
   filterContent: {
-    padding: spacing.lg,
+    padding: SPACING.lg,
   },
   filterSection: {
-    marginBottom: spacing.xl,
-    paddingBottom: spacing.xl,
+    marginBottom: SPACING.xl,
+    paddingBottom: SPACING.xl,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+    borderBottomColor: COLORS.border,
   },
   filterSectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFF',
-    marginBottom: spacing.lg,
-    letterSpacing: 1,
+    fontSize: THEME.typography.fontSizes.lg,
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.text.primary,
+    marginBottom: SPACING.lg,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   priceInputs: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: SPACING.md,
   },
   priceInputContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: SPACING.sm,
   },
   priceLabel: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
+    fontSize: THEME.typography.fontSizes.md,
+    color: COLORS.text.secondary,
     minWidth: 40,
+    fontWeight: THEME.typography.fontWeights.medium,
   },
   priceInput: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderRadius: 8,
-    padding: spacing.sm,
-    color: '#FFF',
-    fontSize: 16,
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: BORDER_RADIUS.sm,
+    padding: SPACING.sm,
+    color: COLORS.text.primary,
+    fontSize: THEME.typography.fontSizes.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: COLORS.border,
   },
   priceSeparator: {
-    fontSize: 18,
-    color: 'rgba(255,255,255,0.5)',
-    fontWeight: '700',
+    fontSize: THEME.typography.fontSizes.xl,
+    color: COLORS.text.tertiary,
+    fontWeight: THEME.typography.fontWeights.bold,
   },
   checkboxRow: {
     flexDirection: 'row',
@@ -1590,71 +1625,73 @@ const styles = StyleSheet.create({
   checkbox: {
     width: 24,
     height: 24,
-    borderRadius: 6,
+    borderRadius: BORDER_RADIUS.xs,
     borderWidth: 2,
-    borderColor: '#FF00FF',
+    borderColor: COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.md,
+    marginRight: SPACING.md,
   },
   checkboxChecked: {
-    backgroundColor: '#FF00FF',
+    backgroundColor: COLORS.primary,
   },
   checkboxLabel: {
-    fontSize: 16,
-    color: '#FFF',
+    fontSize: THEME.typography.fontSizes.md,
+    color: COLORS.text.primary,
+    fontWeight: THEME.typography.fontWeights.medium,
   },
   filterGroup: {
-    marginBottom: spacing.lg,
+    marginBottom: SPACING.lg,
   },
   filterGroupLabel: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
-    marginBottom: spacing.sm,
-    fontWeight: '600',
+    fontSize: THEME.typography.fontSizes.md,
+    color: COLORS.text.secondary,
+    marginBottom: SPACING.sm,
+    fontWeight: THEME.typography.fontWeights.semibold,
   },
   filterOptions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.sm,
+    gap: SPACING.sm,
   },
   filterOption: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.full,
+    backgroundColor: COLORS.surfaceLight,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: COLORS.border,
   },
   filterOptionActive: {
-    backgroundColor: 'rgba(255, 0, 255, 0.1)',
-    borderColor: '#FF00FF',
+    backgroundColor: THEME.components.badge.primary.backgroundColor,
+    borderColor: THEME.components.badge.primary.borderColor,
   },
   filterOptionText: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.7)',
-    fontWeight: '600',
+    fontSize: THEME.typography.fontSizes.sm,
+    color: COLORS.text.secondary,
+    fontWeight: THEME.typography.fontWeights.semibold,
   },
   filterOptionTextActive: {
-    color: '#FF00FF',
+    color: THEME.components.badge.primary.textColor,
   },
   modalActions: {
-    padding: spacing.lg,
+    padding: SPACING.lg,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
+    borderTopColor: COLORS.border,
   },
   applyButton: {
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     overflow: 'hidden',
+    ...SHADOWS.primary,
   },
   applyButtonGradient: {
-    padding: spacing.lg,
+    padding: SPACING.lg,
     alignItems: 'center',
   },
   applyButtonText: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 1,
+    color: COLORS.white,
+    fontSize: THEME.typography.fontSizes.lg,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
 });
