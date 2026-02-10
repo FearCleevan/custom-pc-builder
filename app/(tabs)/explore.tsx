@@ -25,6 +25,7 @@ import {
 } from 'react-native';
 
 // Import the new modal components
+import { CompareModal } from '@/components/CompareModal';
 import { ProductDetailModal } from '@/components/ProductDetailModal';
 import { ToastNotification } from '@/components/ToastNotification';
 
@@ -51,12 +52,15 @@ export default function ExploreScreen() {
   const [toastType, setToastType] = useState<'success' | 'error'>('success');
   const [selectedProduct, setSelectedProduct] = useState<ComponentItem | null>(null);
   const [showProductDetail, setShowProductDetail] = useState(false);
+  const [showCompareModal, setShowCompareModal] = useState(false);
 
   const scrollY = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList>(null);
 
   const addToCompare = useCompareStore((state) => state.addProduct);
+  const removeFromCompare = useCompareStore((state) => state.removeProduct);
   const compareProducts = useCompareStore((state) => state.products);
+  const clearCompare = useCompareStore((state) => state.clearProducts);
 
   // Handle scroll animation
   const headerHeight = scrollY.interpolate({
@@ -91,9 +95,9 @@ export default function ExploreScreen() {
     const str = String(specValue).trim();
 
     // Remove any non-numeric characters except digits
-    const numericStr = str.replace(/[^\d]/g, '');
+    const numericStr = str.replace(/[^\d.]/g, '');
 
-    return numericStr ? parseInt(numericStr, 10) : 0;
+    return numericStr ? parseFloat(numericStr) : 0;
   };
 
   // Helper function to extract RAM speed
@@ -497,8 +501,31 @@ export default function ExploreScreen() {
   };
 
   const handleAddToCompare = (component: ComponentItem) => {
+    // Check if we can add this product to compare
+    if (compareProducts.length > 0) {
+      const firstProductType = compareProducts[0].type;
+      
+      if (firstProductType !== component.type) {
+        showToastNotification(
+          `You can only compare ${firstProductType.toUpperCase()} with other ${firstProductType.toUpperCase()} components. Please clear comparison or select a ${firstProductType}.`,
+          'error'
+        );
+        return;
+      }
+    }
+    
+    if (compareProducts.length >= 4) {
+      showToastNotification('Maximum 4 products can be compared at once.', 'error');
+      return;
+    }
+    
+    if (compareProducts.some(p => p.id === component.id)) {
+      showToastNotification('Product already in comparison.', 'error');
+      return;
+    }
+
     addToCompare(component);
-    showToastNotification(`${component.name} has been added to compare.`, 'success');
+    showToastNotification(`${component.name} added to comparison.`, 'success');
   };
 
   const handleFilterChange = (filterId: string, value: any) => {
@@ -541,6 +568,12 @@ export default function ExploreScreen() {
         product={selectedProduct}
         onClose={() => setShowProductDetail(false)}
         onProductChange={(product) => setSelectedProduct(product)}
+      />
+
+      {/* Compare Modal */}
+      <CompareModal
+        visible={showCompareModal}
+        onClose={() => setShowCompareModal(false)}
       />
 
       {/* Animated Header */}
@@ -600,7 +633,7 @@ export default function ExploreScreen() {
                 style={styles.compareButton}
                 onPress={() => {
                   if (compareProducts.length > 0) {
-                    router.push('/compare');
+                    setShowCompareModal(true);
                   } else {
                     showToastNotification('Add some components to compare first.', 'error');
                   }
@@ -793,8 +826,7 @@ export default function ExploreScreen() {
               extrapolate: 'clamp',
             })
           }
-        ]}
-      >
+        ]}>
         <Text style={styles.resultsText}>
           {filteredComponents.length} {filteredComponents.length === 1 ? 'item' : 'items'} found
         </Text>

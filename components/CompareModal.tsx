@@ -1,19 +1,20 @@
 import { useCompareStore } from '@/store/useCompareStore';
-import { spacing } from '@/theme';
+import { THEME } from '@/theme/indexs';
 import { Product } from '@/types/product';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo } from 'react';
 import {
   Dimensions,
-  FlatList,
   Modal,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
+
+const { colors: COLORS, spacing: SPACING, borderRadius: BORDER_RADIUS, shadows: SHADOWS } = THEME;
 
 interface CompareModalProps {
   visible: boolean;
@@ -21,73 +22,185 @@ interface CompareModalProps {
   fullScreen?: boolean;
 }
 
-interface ComparisonAnalysis {
-  bestProduct: Product | null;
-  analysis: Array<{
-    spec: string;
-    values: Array<{ productId: string; value: string; isBest: boolean }>;
-    notes: string[];
-  }>;
-  recommendations: string[];
+interface ComparisonResult {
+  spec: string;
+  values: {
+    productId: string;
+    value: string;
+    isBest: boolean;
+    isWorst: boolean;
+    description: string;
+  }[];
+  bestProductId: string | null;
+  worstProductId: string | null;
+  analysis: string;
+}
+
+interface ComponentComparison {
+  id: string;
+  name: string;
+  price: number;
+  type: string;
+  specs: Record<string, any>;
+  rating?: number;
 }
 
 // Comparison rules for different component types
-const COMPARISON_RULES: Record<string, Record<string, { better: 'higher' | 'lower', unit?: string }>> = {
+const COMPARISON_RULES: Record<string, Record<string, { 
+  better: 'higher' | 'lower'; 
+  unit?: string;
+  weight: number; // Importance weight for scoring
+  description: (value: any) => string;
+}>> = {
   cpu: {
-    'Core Count': { better: 'higher' },
-    'Thread Count': { better: 'higher' },
-    'Base Clock': { better: 'higher', unit: 'GHz' },
-    'Max Boost Clock': { better: 'higher', unit: 'GHz' },
-    'TDP': { better: 'lower', unit: 'W' },
-    'L3 Cache': { better: 'higher', unit: 'MB' },
+    'Core Count': { 
+      better: 'higher', 
+      unit: 'Cores',
+      weight: 0.3,
+      description: (v) => `More cores for better multitasking`
+    },
+    'Thread Count': { 
+      better: 'higher', 
+      unit: 'Threads',
+      weight: 0.2,
+      description: (v) => `More threads improve parallel processing`
+    },
+    'Base Clock': { 
+      better: 'higher', 
+      unit: 'GHz',
+      weight: 0.15,
+      description: (v) => `Higher base clock speeds`
+    },
+    'Max Boost Clock': { 
+      better: 'higher', 
+      unit: 'GHz',
+      weight: 0.2,
+      description: (v) => `Higher boost for peak performance`
+    },
+    'TDP': { 
+      better: 'lower', 
+      unit: 'W',
+      weight: 0.1,
+      description: (v) => `Lower power consumption`
+    },
+    'L3 Cache': { 
+      better: 'higher', 
+      unit: 'MB',
+      weight: 0.05,
+      description: (v) => `Larger cache improves data access`
+    },
   },
   gpu: {
-    'Memory Size': { better: 'higher', unit: 'GB' },
-    'Boost Clock': { better: 'higher', unit: 'MHz' },
-    'Memory Interface': { better: 'higher', unit: 'bit' },
-    'TDP': { better: 'lower', unit: 'W' },
+    'Memory Size': { 
+      better: 'higher', 
+      unit: 'GB',
+      weight: 0.25,
+      description: (v) => `More VRAM for higher resolutions/textures`
+    },
+    'Boost Clock': { 
+      better: 'higher', 
+      unit: 'MHz',
+      weight: 0.2,
+      description: (v) => `Higher clock speeds for better performance`
+    },
+    'Memory Interface': { 
+      better: 'higher', 
+      unit: 'bit',
+      weight: 0.15,
+      description: (v) => `Wider memory bus for faster data transfer`
+    },
+    'TDP': { 
+      better: 'lower', 
+      unit: 'W',
+      weight: 0.1,
+      description: (v) => `Lower power consumption and heat`
+    },
+    'CUDA Cores': { 
+      better: 'higher', 
+      weight: 0.3,
+      description: (v) => `More cores for parallel processing`
+    },
   },
   ram: {
-    'Speed': { better: 'higher', unit: 'MHz' },
-    'Total Capacity': { better: 'higher', unit: 'GB' },
-    'CAS Latency': { better: 'lower' },
-    'Voltage': { better: 'lower', unit: 'V' },
-  },
-  motherboard: {
-    'Memory Slots': { better: 'higher' },
-    'Maximum Memory': { better: 'higher', unit: 'GB' },
-    'PCIe Slots': { better: 'higher' },
-    'M.2 Slots': { better: 'higher' },
+    'Speed': { 
+      better: 'higher', 
+      unit: 'MHz',
+      weight: 0.4,
+      description: (v) => `Faster memory speeds`
+    },
+    'Total Capacity': { 
+      better: 'higher', 
+      unit: 'GB',
+      weight: 0.4,
+      description: (v) => `More RAM for multitasking`
+    },
+    'CAS Latency': { 
+      better: 'lower',
+      weight: 0.2,
+      description: (v) => `Lower latency for faster response`
+    },
   },
   storage: {
-    'Capacity': { better: 'higher', unit: 'GB' },
-    'Sequential Read': { better: 'higher', unit: 'MB/s' },
-    'Sequential Write': { better: 'higher', unit: 'MB/s' },
-    'TBW': { better: 'higher', unit: 'TB' },
+    'Capacity': { 
+      better: 'higher', 
+      unit: 'GB',
+      weight: 0.4,
+      description: (v) => `More storage space`
+    },
+    'Sequential Read': { 
+      better: 'higher', 
+      unit: 'MB/s',
+      weight: 0.3,
+      description: (v) => `Faster read speeds`
+    },
+    'Sequential Write': { 
+      better: 'higher', 
+      unit: 'MB/s',
+      weight: 0.3,
+      description: (v) => `Faster write speeds`
+    },
   },
   psu: {
-    'Wattage': { better: 'higher', unit: 'W' },
-    'Efficiency Rating': { better: 'higher' },
-    'Warranty': { better: 'higher', unit: 'years' },
-  },
-  case: {
-    'Max GPU Length': { better: 'higher', unit: 'mm' },
-    'Max CPU Cooler Height': { better: 'higher', unit: 'mm' },
-    '3.5" Drive Bays': { better: 'higher' },
-    '2.5" Drive Bays': { better: 'higher' },
-  },
-  cooler: {
-    'Radiator Size': { better: 'higher', unit: 'mm' },
-    'Noise Level': { better: 'lower', unit: 'dB' },
-    'Fan RPM': { better: 'higher', unit: 'RPM' },
-    'Warranty': { better: 'higher', unit: 'years' },
+    'Wattage': { 
+      better: 'higher', 
+      unit: 'W',
+      weight: 0.3,
+      description: (v) => `Higher wattage for more components`
+    },
+    'Efficiency Rating': { 
+      better: 'higher', 
+      weight: 0.4,
+      description: (v) => `Better efficiency saves power`
+    },
+    'Warranty': { 
+      better: 'higher', 
+      unit: 'years',
+      weight: 0.3,
+      description: (v) => `Longer warranty period`
+    },
   },
 };
 
-const VALUE_PATTERNS = {
-  numeric: /^[\d.,]+/,
-  unit: /[a-zA-Z%°]+$/,
-  range: /[\d.,]+\s*-\s*[\d.,]+/,
+// Extract numeric value from spec
+const extractNumericValue = (value: any): number => {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'boolean') return value ? 1 : 0;
+  
+  const str = String(value);
+  const numericMatch = str.match(/[\d,.]+/);
+  if (numericMatch) {
+    return parseFloat(numericMatch[0].replace(/,/g, ''));
+  }
+  return 0;
+};
+
+// Format value with unit
+const formatValue = (value: any, unit?: string): string => {
+  const num = extractNumericValue(value);
+  if (unit && num > 0) {
+    return `${num} ${unit}`;
+  }
+  return String(value);
 };
 
 export const CompareModal: React.FC<CompareModalProps> = ({ 
@@ -99,107 +212,142 @@ export const CompareModal: React.FC<CompareModalProps> = ({
   const removeProduct = useCompareStore((state) => state.removeProduct);
   const clearProducts = useCompareStore((state) => state.clearProducts);
 
-  // Analyze and compare products
-  const comparisonAnalysis = useMemo((): ComparisonAnalysis => {
-    if (products.length < 2) {
-      return { bestProduct: null, analysis: [], recommendations: [] };
-    }
+  // Check if all products are same type
+  const canCompare = useMemo(() => {
+    if (products.length < 2) return false;
+    const firstType = products[0].type;
+    return products.every(product => product.type === firstType);
+  }, [products]);
 
-    const allSpecKeys = Array.from(
+  // Get comparison results
+  const comparisonResults = useMemo(() => {
+    if (!canCompare || products.length < 2) return [];
+
+    const componentType = products[0].type;
+    const rules = COMPARISON_RULES[componentType] || {};
+    const allSpecs = Array.from(
       new Set(products.flatMap(p => Object.keys(p.specs)))
-    );
+    ).filter(spec => rules[spec]);
 
-    const analysis = allSpecKeys.map(specKey => {
+    const results: ComparisonResult[] = allSpecs.map(spec => {
+      const rule = rules[spec];
       const values = products.map(product => ({
         productId: product.id,
-        value: product.specs[specKey] || '-',
-        isBest: false,
+        value: product.specs[spec] || 'N/A',
+        numericValue: extractNumericValue(product.specs[spec]),
       }));
 
-      const componentType = products[0]?.type;
-      const specRules = COMPARISON_RULES[componentType] || {};
-      const rule = specRules[specKey];
+      // Determine best and worst
+      let bestProductId: string | null = null;
+      let worstProductId: string | null = null;
+      let bestValue = rule.better === 'higher' ? -Infinity : Infinity;
+      let worstValue = rule.better === 'higher' ? Infinity : -Infinity;
 
-      // Mark best values
-      if (rule && values.every(v => v.value !== '-')) {
-        const numericValues = values.map(v => {
-          const match = String(v.value).match(VALUE_PATTERNS.numeric);
-          return match ? parseFloat(match[0].replace(',', '')) : 0;
-        });
-
+      values.forEach(({ productId, numericValue }) => {
+        if (numericValue === 0) return; // Skip invalid values
+        
         if (rule.better === 'higher') {
-          const maxValue = Math.max(...numericValues);
-          values.forEach((v, i) => {
-            v.isBest = numericValues[i] === maxValue && maxValue > 0;
-          });
+          if (numericValue > bestValue) {
+            bestValue = numericValue;
+            bestProductId = productId;
+          }
+          if (numericValue < worstValue) {
+            worstValue = numericValue;
+            worstProductId = productId;
+          }
         } else {
-          const minValue = Math.min(...numericValues.filter(n => n > 0));
-          values.forEach((v, i) => {
-            v.isBest = numericValues[i] === minValue && minValue > 0;
-          });
+          if (numericValue < bestValue) {
+            bestValue = numericValue;
+            bestProductId = productId;
+          }
+          if (numericValue > worstValue) {
+            worstValue = numericValue;
+            worstProductId = productId;
+          }
         }
-      }
-
-      // Generate notes
-      const notes: string[] = [];
-      if (rule) {
-        const bestValues = values.filter(v => v.isBest);
-        if (bestValues.length === 1) {
-          const bestProduct = products.find(p => p.id === bestValues[0].productId);
-          const unit = rule.unit ? ` ${rule.unit}` : '';
-          notes.push(`${bestProduct?.name.split(' ')[0]} has the ${rule.better === 'higher' ? 'highest' : 'lowest'} ${specKey.toLowerCase()} (${bestValues[0].value}${unit})`);
-        } else if (bestValues.length > 1) {
-          notes.push(`Multiple products share the same ${specKey.toLowerCase()}`);
-        }
-      }
-
-      return { spec: specKey, values, notes };
-    });
-
-    // Determine best product based on score
-    const productScores = products.map(product => {
-      let score = 0;
-      analysis.forEach(({ spec, values }) => {
-        const value = values.find(v => v.productId === product.id);
-        if (value?.isBest) score += 2;
       });
-      return { product, score };
+
+      // Create analysis description
+      const bestProduct = products.find(p => p.id === bestProductId);
+      const worstProduct = products.find(p => p.id === worstProductId);
+      
+      let analysis = '';
+      if (bestProduct && worstProduct && bestProductId !== worstProductId) {
+        const bestValueStr = formatValue(bestValue, rule.unit);
+        const worstValueStr = formatValue(worstValue, rule.unit);
+        analysis = `${bestProduct.name.split(' ')[0]} leads with ${bestValueStr} vs ${worstProduct.name.split(' ')[0]}'s ${worstValueStr}. ${rule.description(bestValue)}`;
+      } else if (bestProduct) {
+        analysis = `All products have similar ${spec.toLowerCase()}`;
+      }
+
+      return {
+        spec,
+        values: values.map(v => ({
+          ...v,
+          formattedValue: formatValue(v.value, rule.unit),
+          isBest: v.productId === bestProductId,
+          isWorst: v.productId === worstProductId,
+          description: rule.description(v.numericValue),
+        })),
+        bestProductId,
+        worstProductId,
+        analysis,
+      };
     });
 
-    const bestProduct = productScores.reduce((best, current) => 
-      current.score > best.score ? current : best
-    ).product;
+    return results;
+  }, [products, canCompare]);
 
-    // Generate recommendations
-    const recommendations: string[] = [];
-    if (productScores[0].score > 0) {
-      const winningSpecs = analysis.filter(a => 
-        a.values.some(v => v.productId === bestProduct.id && v.isBest)
-      ).map(a => a.spec);
+  // Calculate overall scores
+  const productScores = useMemo(() => {
+    if (!canCompare) return [];
 
-      if (winningSpecs.length > 0) {
-        recommendations.push(`${bestProduct.name.split(' ')[0]} is the best overall performer`);
-        recommendations.push(`Leading in: ${winningSpecs.slice(0, 3).join(', ')}`);
-      }
-
-      // Price analysis
-      const sortedByPrice = [...products].sort((a, b) => a.price - b.price);
-      if (bestProduct.id === sortedByPrice[0].id) {
-        recommendations.push('Best price-to-performance ratio');
-      }
-    }
-
-    return { bestProduct, analysis, recommendations };
-  }, [products]);
+    const componentType = products[0].type;
+    const rules = COMPARISON_RULES[componentType] || {};
+    
+    return products.map(product => {
+      let score = 0;
+      let totalWeight = 0;
+      
+      Object.entries(rules).forEach(([spec, rule]) => {
+        const value = product.specs[spec];
+        if (value !== undefined) {
+          const numValue = extractNumericValue(value);
+          if (numValue > 0) {
+            // Normalize score based on rule
+            if (rule.better === 'higher') {
+              score += numValue * rule.weight;
+            } else {
+              score += (1 / Math.max(numValue, 1)) * rule.weight;
+            }
+            totalWeight += rule.weight;
+          }
+        }
+      });
+      
+      // Add price factor (lower is better)
+      const avgPrice = products.reduce((sum, p) => sum + p.price, 0) / products.length;
+      const priceScore = (avgPrice / Math.max(product.price, 1)) * 0.2;
+      score += priceScore;
+      totalWeight += 0.2;
+      
+      return {
+        product,
+        score: totalWeight > 0 ? score / totalWeight : 0,
+        pricePerf: product.price > 0 ? score / product.price : 0,
+      };
+    }).sort((a, b) => b.score - a.score);
+  }, [products, canCompare]);
 
   const screenWidth = Dimensions.get('window').width;
   const maxProducts = Math.min(products.length, 4);
-  const productWidth = (screenWidth - 120 - spacing.md * 2) / maxProducts;
+  const productWidth = (screenWidth - 120 - SPACING.md * 2) / maxProducts;
 
   if (products.length === 0) return null;
 
   const renderProductHeader = (product: Product, index: number) => {
-    const isBestOverall = comparisonAnalysis.bestProduct?.id === product.id;
+    const score = productScores.find(s => s.product.id === product.id);
+    const isBestOverall = index === 0 && productScores.length > 1;
     
     return (
       <View 
@@ -210,48 +358,74 @@ export const CompareModal: React.FC<CompareModalProps> = ({
           isBestOverall && styles.bestProductColumn
         ]}
       >
-        <LinearGradient
-          colors={isBestOverall ? ['#FF00FF', '#9400D3'] : ['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)']}
-          style={styles.productHeader}
+        <View
+          style={[
+            styles.productHeader,
+            isBestOverall && { 
+              backgroundColor: COLORS.primary + '20',
+              borderColor: COLORS.primary + '40'
+            }
+          ]}
         >
           {isBestOverall && (
-            <View style={styles.bestBadge}>
-              <Ionicons name="trophy" size={12} color="#FFF" />
-              <Text style={styles.bestBadgeText}>BEST</Text>
+            <View style={[
+              styles.bestBadge,
+              { 
+                backgroundColor: THEME.components.badge.primary.backgroundColor,
+                borderColor: THEME.components.badge.primary.borderColor
+              }
+            ]}>
+              <Ionicons name="trophy" size={12} color={THEME.components.badge.primary.textColor} />
+              <Text style={[
+                styles.bestBadgeText,
+                { color: THEME.components.badge.primary.textColor }
+              ]}>BEST</Text>
             </View>
           )}
           
           <Text style={[
             styles.productName,
-            isBestOverall && styles.bestProductText
+            isBestOverall && { color: COLORS.primary }
           ]} numberOfLines={2}>
             {product.name}
           </Text>
           
           <Text style={[
             styles.productPrice,
-            isBestOverall && styles.bestProductText
+            isBestOverall && { color: COLORS.primary }
           ]}>
             ₱{product.price.toLocaleString()}
           </Text>
           
           <Text style={[
             styles.productType,
-            isBestOverall && styles.bestProductText
+            isBestOverall && { color: COLORS.text.primary }
           ]}>
             {product.type.toUpperCase()}
           </Text>
           
+          {score && (
+            <View style={styles.scoreContainer}>
+              <Text style={styles.scoreText}>
+                Score: {score.score.toFixed(1)}
+              </Text>
+              <Text style={styles.pricePerfText}>
+                Value: {(score.pricePerf * 1000).toFixed(0)}
+              </Text>
+            </View>
+          )}
+          
           <TouchableOpacity 
-            style={[
-              styles.removeButton,
-              isBestOverall && styles.bestRemoveButton
-            ]}
+            style={styles.removeButton}
             onPress={() => removeProduct(product.id)}
           >
-            <Ionicons name="close-circle" size={20} color={isBestOverall ? "#FFF" : "#FF0000"} />
+            <Ionicons 
+              name="close-circle" 
+              size={20} 
+              color={isBestOverall ? COLORS.primary : COLORS.danger} 
+            />
           </TouchableOpacity>
-        </LinearGradient>
+        </View>
       </View>
     );
   };
@@ -267,152 +441,298 @@ export const CompareModal: React.FC<CompareModalProps> = ({
         <View style={styles.modalContent}>
           {/* Header */}
           <LinearGradient
-            colors={['#0a0a0f', '#1a1a2e']}
+            colors={THEME.colors.gradients.dark}
             style={styles.modalHeader}
           >
             <View style={styles.headerLeft}>
-              <Ionicons name="git-compare" size={24} color="#00FFFF" />
+              <Ionicons name="git-compare" size={24} color={COLORS.secondary} />
               <View>
                 <Text style={styles.modalTitle}>Compare Products</Text>
                 <Text style={styles.modalSubtitle}>
-                  {products.length}/4 components compared
+                  {products.length}/4 {products[0]?.type.toUpperCase()} compared
                 </Text>
               </View>
             </View>
             
             <View style={styles.headerButtons}>
+              {!canCompare && products.length > 1 && (
+                <View style={styles.warningBadge}>
+                  <Ionicons name="warning" size={16} color={COLORS.warning} />
+                  <Text style={styles.warningText}>Same type only</Text>
+                </View>
+              )}
+              
               <TouchableOpacity 
-                style={styles.clearButton}
+                style={[
+                  styles.clearButton,
+                  { 
+                    backgroundColor: THEME.components.badge.danger.backgroundColor,
+                    borderColor: THEME.components.badge.danger.borderColor
+                  }
+                ]}
                 onPress={clearProducts}
               >
-                <Ionicons name="trash" size={20} color="#FF0000" />
-                <Text style={styles.clearButtonText}>Clear All</Text>
+                <Ionicons name="trash" size={20} color={THEME.components.badge.danger.textColor} />
+                <Text style={[
+                  styles.clearButtonText,
+                  { color: THEME.components.badge.danger.textColor }
+                ]}>Clear All</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
                 style={styles.closeButton}
                 onPress={onClose}
               >
-                <Ionicons name="close" size={24} color="#FFF" />
+                <Ionicons name="close" size={24} color={COLORS.text.primary} />
               </TouchableOpacity>
             </View>
           </LinearGradient>
 
-          {/* Recommendations Section */}
-          {comparisonAnalysis.recommendations.length > 0 && (
-            <LinearGradient
-              colors={['rgba(255, 0, 255, 0.1)', 'rgba(0, 255, 255, 0.05)']}
-              style={styles.recommendationsSection}
-            >
-              <Text style={styles.recommendationsTitle}>
-                <Ionicons name="bulb" size={16} color="#FFFF00" /> RECOMMENDATIONS
+          {/* Warning for mixed product types */}
+          {!canCompare && products.length > 1 && (
+            <View style={[
+              styles.warningSection,
+              { 
+                backgroundColor: COLORS.warning + '20',
+                borderColor: COLORS.warning
+              }
+            ]}>
+              <Ionicons name="warning" size={20} color={COLORS.warning} />
+              <Text style={[styles.warningMessage, { color: COLORS.warning }]}>
+                You can only compare products of the same type. Please select components from the same category.
               </Text>
-              <FlatList
-                data={comparisonAnalysis.recommendations}
-                renderItem={({ item }) => (
-                  <View style={styles.recommendationItem}>
-                    <Ionicons name="checkmark-circle" size={14} color="#00FF00" />
-                    <Text style={styles.recommendationText}>{item}</Text>
+            </View>
+          )}
+
+          {/* Overall Recommendations */}
+          {canCompare && productScores.length > 0 && (
+            <View style={[
+              styles.recommendationsSection,
+              { 
+                backgroundColor: COLORS.surfaceLight,
+                borderColor: COLORS.border 
+              }
+            ]}>
+              <Text style={[
+                styles.recommendationsTitle,
+                { color: COLORS.primary }
+              ]}>
+                <Ionicons name="bulb" size={16} color={COLORS.primary} /> RECOMMENDATIONS
+              </Text>
+              
+              <View style={styles.recommendationGrid}>
+                {productScores.map(({ product, score, pricePerf }, index) => (
+                  <View key={product.id} style={styles.recommendationCard}>
+                    <View style={styles.recommendationHeader}>
+                      <Text style={styles.recommendationRank}>#{index + 1}</Text>
+                      <Text style={styles.recommendationName} numberOfLines={1}>
+                        {product.name.split(' ')[0]}
+                      </Text>
+                    </View>
+                    <Text style={styles.recommendationScore}>
+                      Overall Score: <Text style={{ fontWeight: 'bold' }}>{score.toFixed(1)}</Text>
+                    </Text>
+                    <Text style={styles.recommendationPrice}>
+                      Price: ₱{product.price.toLocaleString()}
+                    </Text>
+                    {index === 0 && (
+                      <View style={styles.bestChoiceBadge}>
+                        <Ionicons name="checkmark-circle" size={14} color={COLORS.success} />
+                        <Text style={styles.bestChoiceText}>Best Choice</Text>
+                      </View>
+                    )}
                   </View>
+                ))}
+              </View>
+              
+              {/* Performance vs Price Analysis */}
+              <View style={styles.analysisSection}>
+                <Text style={styles.analysisTitle}>Analysis:</Text>
+                {productScores[0] && (
+                  <Text style={styles.analysisText}>
+                    {productScores[0].product.name.split(' ')[0]} offers the best overall performance. 
+                    {productScores[productScores.length - 1].product.name.split(' ')[0]} has the best price-to-performance ratio.
+                  </Text>
                 )}
-                scrollEnabled={false}
-              />
-            </LinearGradient>
+              </View>
+            </View>
           )}
 
           {/* Comparison Table */}
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            style={styles.horizontalScroll}
-          >
-            <View style={styles.comparisonContainer}>
-              {/* Spec Names Column */}
-              <View style={styles.specNamesColumn}>
-                <View style={styles.specNameHeader}>
-                  <Text style={styles.specsTitle}>SPECIFICATIONS</Text>
+          {canCompare && comparisonResults.length > 0 && (
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              style={styles.horizontalScroll}
+            >
+              <View style={styles.comparisonContainer}>
+                {/* Spec Names Column */}
+                <View style={[
+                  styles.specNamesColumn,
+                  { backgroundColor: COLORS.surface }
+                ]}>
+                  <View style={[
+                    styles.specNameHeader,
+                    { borderBottomColor: COLORS.border }
+                  ]}>
+                    <Text style={[
+                      styles.specsTitle,
+                      { color: COLORS.secondary }
+                    ]}>SPECIFICATIONS</Text>
+                  </View>
+                  {comparisonResults.map(({ spec, analysis }) => (
+                    <View 
+                      key={spec} 
+                      style={[
+                        styles.specNameRow,
+                        { borderBottomColor: COLORS.border + '50' }
+                      ]}
+                    >
+                      <Text style={styles.specNameText}>{spec}</Text>
+                      {analysis && (
+                        <Text style={styles.specAnalysisText}>{analysis}</Text>
+                      )}
+                    </View>
+                  ))}
                 </View>
-                {comparisonAnalysis.analysis.map(({ spec }) => (
-                  <View key={spec} style={styles.specNameRow}>
-                    <Text style={styles.specNameText}>{spec}</Text>
-                  </View>
-                ))}
-              </View>
 
-              {/* Product Columns */}
-              <View style={styles.productsColumns}>
-                {products.map(renderProductHeader)}
-              </View>
+                {/* Product Columns */}
+                <View style={styles.productsColumns}>
+                  {products.map(renderProductHeader)}
+                </View>
 
-              {/* Spec Values */}
-              <ScrollView style={styles.specsScroll}>
-                {comparisonAnalysis.analysis.map(({ spec, values, notes }) => (
-                  <View key={spec} style={styles.specRow}>
-                    {values.map(({ productId, value, isBest }) => {
-                      const product = products.find(p => p.id === productId);
-                      const componentType = product?.type;
-                      const rule = componentType ? COMPARISON_RULES[componentType]?.[spec] : undefined;
-                      
-                      return (
-                        <View 
-                          key={productId} 
-                          style={[
-                            styles.specValueCell,
-                            { width: productWidth },
-                            isBest && styles.bestSpecValueCell
-                          ]}
-                        >
-                          <Text style={[
-                            styles.specValueText,
-                            isBest && styles.bestSpecValueText
-                          ]}>
-                            {value}
-                            {rule?.unit && typeof value === 'string' && !value.includes(rule.unit) ? ` ${rule.unit}` : ''}
-                          </Text>
-                          {isBest && (
-                            <View style={styles.bestIndicator}>
-                              <Ionicons name="star" size={10} color="#FFFF00" />
+                {/* Spec Values */}
+                <ScrollView style={styles.specsScroll}>
+                  {comparisonResults.map(({ spec, values }) => (
+                    <View 
+                      key={spec} 
+                      style={[
+                        styles.specRow,
+                        { borderBottomColor: COLORS.border + '50' }
+                      ]}
+                    >
+                      {values.map(({ productId, formattedValue, isBest, isWorst, description }) => {
+                        return (
+                          <View 
+                            key={productId} 
+                            style={[
+                              styles.specValueCell,
+                              { 
+                                width: productWidth,
+                                borderRightColor: COLORS.border + '50',
+                                backgroundColor: isBest ? COLORS.success + '10' : 
+                                              isWorst ? COLORS.danger + '10' : 
+                                              COLORS.surfaceLight
+                              },
+                              isBest && styles.bestSpecValueCell,
+                              isWorst && styles.worstSpecValueCell
+                            ]}
+                          >
+                            <Text style={[
+                              styles.specValueText,
+                              isBest && { color: COLORS.success, fontWeight: 'bold' },
+                              isWorst && { color: COLORS.danger }
+                            ]}>
+                              {formattedValue}
+                            </Text>
+                            
+                            {/* Indicators */}
+                            <View style={styles.indicators}>
+                              {isBest && (
+                                <View style={styles.bestIndicator}>
+                                  <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
+                                </View>
+                              )}
+                              {isWorst && (
+                                <View style={styles.worstIndicator}>
+                                  <Ionicons name="close-circle" size={16} color={COLORS.danger} />
+                                </View>
+                              )}
                             </View>
-                          )}
-                        </View>
-                      );
-                    })}
-                  </View>
-                ))}
-              </ScrollView>
-            </View>
-          </ScrollView>
+                            
+                            {/* Description */}
+                            <Text style={styles.specDescription} numberOfLines={2}>
+                              {description}
+                            </Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
+            </ScrollView>
+          )}
 
           {/* Legend */}
-          <View style={styles.legendSection}>
+          <View style={[
+            styles.legendSection,
+            { 
+              backgroundColor: COLORS.surface,
+              borderTopColor: COLORS.border 
+            }
+          ]}>
             <View style={styles.legendItem}>
-              <View style={[styles.legendColor, { backgroundColor: '#FF00FF' }]} />
-              <Text style={styles.legendText}>Best Overall Product</Text>
+              <View style={[
+                styles.legendColor, 
+                { 
+                  backgroundColor: THEME.components.badge.primary.backgroundColor,
+                  borderColor: THEME.components.badge.primary.borderColor
+                }
+              ]} />
+              <Text style={styles.legendText}>Best Overall</Text>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.legendColor, styles.bestSpecValueCell]} />
-              <Text style={styles.legendText}>Best Value for Spec</Text>
+              <View style={[
+                styles.legendColor, 
+                styles.bestSpecValueCell,
+                { 
+                  backgroundColor: COLORS.success + '10',
+                  borderColor: COLORS.success
+                }
+              ]} />
+              <Text style={styles.legendText}>Best in Spec (✓)</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[
+                styles.legendColor, 
+                styles.worstSpecValueCell,
+                { 
+                  backgroundColor: COLORS.danger + '10',
+                  borderColor: COLORS.danger
+                }
+              ]} />
+              <Text style={styles.legendText}>Worst in Spec (✗)</Text>
             </View>
           </View>
 
           {/* Footer */}
-          <LinearGradient
-            colors={['rgba(10, 10, 15, 0.8)', 'rgba(10, 10, 15, 1)']}
-            style={styles.footer}
-          >
+          <View style={[
+            styles.footer,
+            { 
+              backgroundColor: COLORS.background,
+              borderTopColor: COLORS.border 
+            }
+          ]}>
             <TouchableOpacity 
               style={styles.closeFooterButton}
               onPress={onClose}
             >
-              <LinearGradient
-                colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
-                style={styles.closeFooterButtonGradient}
-              >
-                <Ionicons name="close" size={20} color="#FFF" />
-                <Text style={styles.closeFooterButtonText}>CLOSE</Text>
-              </LinearGradient>
+              <View style={[
+                styles.closeFooterButtonInner,
+                { 
+                  backgroundColor: THEME.components.button.secondary.backgroundColor,
+                  borderColor: THEME.components.button.secondary.borderColor
+                }
+              ]}>
+                <Ionicons name="close" size={20} color={THEME.components.button.secondary.textColor} />
+                <Text style={[
+                  styles.closeFooterButtonText,
+                  { color: THEME.components.button.secondary.textColor }
+                ]}>CLOSE</Text>
+              </View>
             </TouchableOpacity>
-          </LinearGradient>
+          </View>
         </View>
       </View>
     </Modal>
@@ -422,121 +742,200 @@ export const CompareModal: React.FC<CompareModalProps> = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    backgroundColor: COLORS.overlay,
   },
   modalContent: {
     flex: 1,
-    backgroundColor: '#0a0a0f',
+    backgroundColor: COLORS.background,
     marginTop: 40,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    borderTopLeftRadius: BORDER_RADIUS.xl,
+    borderTopRightRadius: BORDER_RADIUS.xl,
+    overflow: 'hidden',
+    ...SHADOWS.xl,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: spacing.lg,
+    padding: SPACING.lg,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+    borderBottomColor: COLORS.border,
   },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: SPACING.md,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#FFF',
-    letterSpacing: 1,
+    fontSize: THEME.typography.fontSizes['2xl'],
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.text.primary,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   modalSubtitle: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.6)',
+    fontSize: THEME.typography.fontSizes.sm,
+    color: COLORS.text.secondary,
     marginTop: 2,
+    fontWeight: THEME.typography.fontWeights.medium,
   },
   headerButtons: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.lg,
+    gap: SPACING.lg,
+  },
+  warningBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 4,
+    borderRadius: BORDER_RADIUS.sm,
+    backgroundColor: COLORS.warning + '20',
+    gap: 4,
+  },
+  warningText: {
+    fontSize: THEME.typography.fontSizes.xs,
+    color: COLORS.warning,
+    fontWeight: THEME.typography.fontWeights.semibold,
   },
   clearButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 0, 0, 0.1)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 8,
-    gap: spacing.xs,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+    gap: SPACING.xs,
     borderWidth: 1,
-    borderColor: 'rgba(255, 0, 0, 0.3)',
   },
   clearButtonText: {
-    color: '#FF0000',
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.semibold,
   },
   closeButton: {
-    padding: spacing.xs,
+    padding: SPACING.xs,
   },
-  recommendationsSection: {
-    padding: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
-  },
-  recommendationsTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#FFFF00',
-    marginBottom: spacing.sm,
-    letterSpacing: 1,
-  },
-  recommendationItem: {
+  warningSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
+    padding: SPACING.md,
+    borderBottomWidth: 1,
+    gap: SPACING.sm,
   },
-  recommendationText: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.9)',
+  warningMessage: {
     flex: 1,
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.medium,
+  },
+  recommendationsSection: {
+    padding: SPACING.lg,
+    borderBottomWidth: 1,
+  },
+  recommendationsTitle: {
+    fontSize: THEME.typography.fontSizes.md,
+    fontWeight: THEME.typography.fontWeights.bold,
+    marginBottom: SPACING.md,
+    letterSpacing: THEME.typography.letterSpacing.wide,
+  },
+  recommendationGrid: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
+  },
+  recommendationCard: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+    padding: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  recommendationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
+    gap: SPACING.xs,
+  },
+  recommendationRank: {
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.primary,
+  },
+  recommendationName: {
+    fontSize: THEME.typography.fontSizes.sm,
+    color: COLORS.text.primary,
+    fontWeight: THEME.typography.fontWeights.semibold,
+    flex: 1,
+  },
+  recommendationScore: {
+    fontSize: THEME.typography.fontSizes.xs,
+    color: COLORS.text.secondary,
+    marginBottom: 2,
+  },
+  recommendationPrice: {
+    fontSize: THEME.typography.fontSizes.xs,
+    color: COLORS.text.tertiary,
+  },
+  bestChoiceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: SPACING.xs,
+    gap: 2,
+  },
+  bestChoiceText: {
+    fontSize: THEME.typography.fontSizes.xs,
+    color: COLORS.success,
+    fontWeight: THEME.typography.fontWeights.semibold,
+  },
+  analysisSection: {
+    marginTop: SPACING.sm,
+  },
+  analysisTitle: {
+    fontSize: THEME.typography.fontSizes.sm,
+    color: COLORS.text.primary,
+    fontWeight: THEME.typography.fontWeights.bold,
+    marginBottom: 2,
+  },
+  analysisText: {
+    fontSize: THEME.typography.fontSizes.sm,
+    color: COLORS.text.secondary,
+    lineHeight: THEME.typography.lineHeights.relaxed * THEME.typography.fontSizes.sm,
   },
   horizontalScroll: {
     flex: 1,
   },
   comparisonContainer: {
-    paddingBottom: spacing.lg,
+    paddingBottom: SPACING.lg,
   },
   specNamesColumn: {
     width: 120,
-    backgroundColor: 'rgba(255,255,255,0.02)',
   },
   specsTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#00FFFF',
-    letterSpacing: 2,
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wider,
   },
   specNameHeader: {
     height: 140,
-    padding: spacing.md,
+    padding: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
   },
   specNameRow: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
-    justifyContent: 'center',
-    minHeight: 60,
+    minHeight: 80,
   },
   specNameText: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.7)',
-    fontWeight: '600',
+    fontSize: THEME.typography.fontSizes.sm,
+    color: COLORS.text.secondary,
+    fontWeight: THEME.typography.fontWeights.semibold,
+    marginBottom: SPACING.xs,
+  },
+  specAnalysisText: {
+    fontSize: THEME.typography.fontSizes.xs,
+    color: COLORS.text.tertiary,
+    fontStyle: 'italic',
+    lineHeight: THEME.typography.lineHeights.tight * THEME.typography.fontSizes.xs,
   },
   productsColumns: {
     flexDirection: 'row',
@@ -547,66 +946,72 @@ const styles = StyleSheet.create({
     marginRight: 1,
   },
   bestProductColumn: {
-    shadowColor: '#FF00FF',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 10,
+    ...SHADOWS.primary,
   },
   productHeader: {
     height: 140,
-    padding: spacing.md,
+    padding: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
+    borderBottomColor: COLORS.border,
     justifyContent: 'space-between',
     position: 'relative',
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   bestBadge: {
     position: 'absolute',
-    top: spacing.sm,
-    right: spacing.sm,
+    top: SPACING.sm,
+    right: SPACING.sm,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 0, 255, 0.3)',
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: SPACING.sm,
     paddingVertical: 2,
-    borderRadius: 10,
+    borderRadius: BORDER_RADIUS.full,
     gap: 2,
+    borderWidth: 1,
   },
   bestBadgeText: {
-    fontSize: 10,
-    color: '#FFF',
-    fontWeight: '900',
-    letterSpacing: 0.5,
+    fontSize: THEME.typography.fontSizes.xs,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.tight,
   },
   productName: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFF',
-    marginBottom: spacing.xs,
-  },
-  bestProductText: {
-    color: '#FFF',
-    fontWeight: '800',
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.text.primary,
+    marginBottom: SPACING.xs,
   },
   productPrice: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: '#FF00FF',
-    marginBottom: spacing.xs,
+    fontSize: THEME.typography.fontSizes.lg,
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.primary,
+    marginBottom: SPACING.xs,
   },
   productType: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.5)',
-    fontWeight: '600',
-    letterSpacing: 1,
+    fontSize: THEME.typography.fontSizes.xs,
+    color: COLORS.text.tertiary,
+    fontWeight: THEME.typography.fontWeights.semibold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
+  },
+  scoreContainer: {
+    marginTop: SPACING.xs,
+  },
+  scoreText: {
+    fontSize: THEME.typography.fontSizes.xs,
+    color: COLORS.success,
+    fontWeight: THEME.typography.fontWeights.semibold,
+  },
+  pricePerfText: {
+    fontSize: THEME.typography.fontSizes.xs,
+    color: COLORS.secondary,
+    fontWeight: THEME.typography.fontWeights.medium,
   },
   removeButton: {
     position: 'absolute',
-    bottom: spacing.sm,
-    right: spacing.sm,
+    bottom: SPACING.sm,
+    right: SPACING.sm,
   },
-  bestRemoveButton: {},
   specsScroll: {
     marginTop: 140,
     marginLeft: 120,
@@ -614,83 +1019,93 @@ const styles = StyleSheet.create({
   specRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
-    minHeight: 60,
+    minHeight: 80,
   },
   specValueCell: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
-    justifyContent: 'center',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.sm,
+    justifyContent: 'flex-start',
     alignItems: 'center',
     borderRightWidth: 1,
-    borderRightColor: 'rgba(255,255,255,0.05)',
     position: 'relative',
   },
   bestSpecValueCell: {
-    backgroundColor: 'rgba(255, 0, 255, 0.1)',
     borderLeftWidth: 2,
-    borderLeftColor: '#FF00FF',
+    borderLeftColor: COLORS.success,
+  },
+  worstSpecValueCell: {
+    borderLeftWidth: 2,
+    borderLeftColor: COLORS.danger,
   },
   specValueText: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.8)',
+    fontSize: THEME.typography.fontSizes.sm,
+    color: COLORS.text.secondary,
     textAlign: 'center',
+    fontWeight: THEME.typography.fontWeights.medium,
+    marginBottom: SPACING.xs,
   },
-  bestSpecValueText: {
-    color: '#FF00FF',
-    fontWeight: '700',
+  indicators: {
+    position: 'absolute',
+    top: SPACING.xs,
+    right: SPACING.xs,
   },
   bestIndicator: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
+    // Styles for checkmark indicator
+  },
+  worstIndicator: {
+    // Styles for cross indicator
+  },
+  specDescription: {
+    fontSize: THEME.typography.fontSizes.xs,
+    color: COLORS.text.tertiary,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    lineHeight: THEME.typography.lineHeights.tight * THEME.typography.fontSizes.xs,
   },
   legendSection: {
     flexDirection: 'row',
     justifyContent: 'center',
-    padding: spacing.md,
-    gap: spacing.xl,
-    backgroundColor: 'rgba(255,255,255,0.02)',
+    padding: SPACING.md,
+    gap: SPACING.xl,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: SPACING.sm,
   },
   legendColor: {
     width: 16,
     height: 16,
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
   },
   legendText: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.6)',
+    fontSize: THEME.typography.fontSizes.sm,
+    color: COLORS.text.secondary,
+    fontWeight: THEME.typography.fontWeights.medium,
   },
   footer: {
-    padding: spacing.lg,
+    padding: SPACING.lg,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
   },
   closeFooterButton: {
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  closeFooterButtonGradient: {
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.xl,
+  closeFooterButtonInner: {
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
+    gap: SPACING.sm,
   },
   closeFooterButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: 1,
+    fontSize: THEME.typography.fontSizes.lg,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
 });
