@@ -1,13 +1,14 @@
 import { allComponents } from '@/data/mockData';
 import { useBuildStore } from '@/store/useBuildStore';
-import { spacing } from '@/theme';
+import { THEME } from '@/theme/indexs';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Alert,
   Dimensions,
+  FlatList,
   Image,
   ScrollView,
   StyleSheet,
@@ -16,7 +17,9 @@ import {
   View
 } from 'react-native';
 
+const { colors: COLORS, spacing: SPACING, borderRadius: BORDER_RADIUS, shadows: SHADOWS } = THEME;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const SIMILAR_PRODUCT_WIDTH = (SCREEN_WIDTH - SPACING.lg * 3) / 2.5;
 
 export default function ComponentDetailsModal() {
   const router = useRouter();
@@ -43,6 +46,19 @@ export default function ComponentDetailsModal() {
   
   const component = allComponents.find(c => c.id === componentId);
   
+  // Find similar products
+  const similarProducts = useMemo(() => {
+    if (!component) return [];
+    
+    return allComponents
+      .filter(item => 
+        item.type === component.type && 
+        item.id !== component.id &&
+        Math.abs(item.price - component.price) < component.price * 0.3 // Within 30% price range
+      )
+      .slice(0, 5);
+  }, [component]);
+
   if (!component) {
     return (
       <View style={styles.container}>
@@ -100,10 +116,91 @@ export default function ComponentDetailsModal() {
     }
   };
 
+  const handleSimilarProductPress = (similarComponent: typeof component) => {
+    router.push({
+      pathname: "/(modals)/component-details",
+      params: {
+        id: similarComponent.id,
+        type: similarComponent.type,
+        from: from,
+        slotType: slotType
+      },
+    });
+  };
+
+  const SimilarProductCard = ({ item }: { item: typeof component }) => (
+    <TouchableOpacity
+      style={styles.similarProductCard}
+      onPress={() => handleSimilarProductPress(item)}
+      activeOpacity={0.8}
+    >
+      <View style={styles.similarProductInner}>
+        {/* Stock Badge */}
+        <View style={[
+          styles.similarStockBadge,
+          {
+            backgroundColor: item.stock === 'In stock'
+              ? THEME.components.badge.success.backgroundColor
+              : THEME.components.badge.danger.backgroundColor
+          }
+        ]}>
+          <View style={[
+            styles.similarStockDot,
+            {
+              backgroundColor: item.stock === 'In stock'
+                ? THEME.components.badge.success.textColor
+                : THEME.components.badge.danger.textColor
+            }
+          ]} />
+          <Text style={[
+            styles.similarStockText,
+            {
+              color: item.stock === 'In stock'
+                ? THEME.components.badge.success.textColor
+                : THEME.components.badge.danger.textColor
+            }
+          ]}>
+            {item.stock === 'In stock' ? 'In Stock' : 'Out of Stock'}
+          </Text>
+        </View>
+
+        {/* Product Image */}
+        <View style={styles.similarImageContainer}>
+          {item.image ? (
+            <Image 
+              source={{ uri: item.image }} 
+              style={styles.similarProductImage}
+              resizeMode="contain"
+            />
+          ) : (
+            <View style={styles.similarImagePlaceholder}>
+              <Ionicons name="hardware-chip-outline" size={24} color={COLORS.text.tertiary} />
+            </View>
+          )}
+        </View>
+
+        {/* Product Name */}
+        <Text style={styles.similarProductName} numberOfLines={2}>
+          {item.name}
+        </Text>
+
+        {/* Price */}
+        <Text style={styles.similarProductPrice}>
+          ₱{item.price.toLocaleString()}
+        </Text>
+
+        {/* Quick Spec */}
+        <Text style={styles.similarProductSpec} numberOfLines={1}>
+          {Object.entries(item.specs)[0]?.[1] || 'High Performance'}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#0a0a0f', '#1a1a2e']}
+        colors={THEME.colors.gradients.dark}
         style={styles.headerGradient}
       >
         <View style={styles.header}>
@@ -130,17 +227,16 @@ export default function ComponentDetailsModal() {
               <Image 
                 source={{ uri: component.image }} 
                 style={styles.componentImage}
-                resizeMode="cover"
+                resizeMode="contain"
               />
             ) : (
-              <LinearGradient
-                colors={['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.04)']}
-                style={styles.imagePlaceholder}
-              >
-                <Text style={styles.imageText}>
-                  {component.type.charAt(0).toUpperCase()}
-                </Text>
-              </LinearGradient>
+              <View style={styles.imagePlaceholder}>
+                <Ionicons 
+                  name="hardware-chip-outline" 
+                  size={64} 
+                  color={COLORS.text.tertiary} 
+                />
+              </View>
             )}
           </View>
         </View>
@@ -153,15 +249,30 @@ export default function ComponentDetailsModal() {
             </Text>
             <View style={[
               styles.stockBadge,
-              { backgroundColor: component.stock === 'In stock' ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 0, 0, 0.1)' }
+              { 
+                backgroundColor: component.stock === 'In stock' 
+                  ? THEME.components.badge.success.backgroundColor
+                  : THEME.components.badge.danger.backgroundColor,
+                borderColor: component.stock === 'In stock'
+                  ? THEME.components.badge.success.borderColor
+                  : THEME.components.badge.danger.borderColor
+              }
             ]}>
               <View style={[
                 styles.stockDot,
-                { backgroundColor: component.stock === 'In stock' ? '#00FF00' : '#FF0000' }
+                { 
+                  backgroundColor: component.stock === 'In stock' 
+                    ? THEME.components.badge.success.textColor
+                    : THEME.components.badge.danger.textColor
+                }
               ]} />
               <Text style={[
                 styles.stockText,
-                { color: component.stock === 'In stock' ? '#00FF00' : '#FF0000' }
+                { 
+                  color: component.stock === 'In stock' 
+                    ? THEME.components.badge.success.textColor
+                    : THEME.components.badge.danger.textColor
+                }
               ]}>
                 {component.stock}
               </Text>
@@ -194,6 +305,28 @@ export default function ComponentDetailsModal() {
           ))}
         </View>
 
+        {/* Similar Products */}
+        {similarProducts.length > 0 && (
+          <View style={styles.similarSection}>
+            <View style={styles.similarHeader}>
+              <Text style={styles.sectionTitle}>Similar Products</Text>
+              <Text style={styles.similarCount}>
+                {similarProducts.length} options
+              </Text>
+            </View>
+            
+            <FlatList
+              data={similarProducts}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.similarProductsList}
+              contentContainerStyle={styles.similarProductsContent}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => <SimilarProductCard item={item} />}
+            />
+          </View>
+        )}
+
         {/* Action Buttons */}
         {from !== 'build' && !isInBuild && (
           <View style={styles.actionButtons}>
@@ -202,7 +335,7 @@ export default function ComponentDetailsModal() {
               onPress={handleAddToBuild}
             >
               <LinearGradient
-                colors={['#FF00FF', '#9400D3']}
+                colors={THEME.colors.gradients.primary}
                 style={styles.buttonGradient}
               >
                 <Ionicons name="add-circle" size={20} color="#FFF" />
@@ -218,15 +351,12 @@ export default function ComponentDetailsModal() {
                 // Handle compare
               }}
             >
-              <LinearGradient
-                colors={['rgba(0, 255, 255, 0.1)', 'rgba(0, 255, 255, 0.05)']}
-                style={styles.secondaryButtonGradient}
-              >
-                <Ionicons name="git-compare" size={18} color="#00FFFF" />
+              <View style={styles.secondaryButtonInner}>
+                <Ionicons name="git-compare" size={18} color={COLORS.secondary} />
                 <Text style={styles.secondaryButtonText}>
                   COMPARE
                 </Text>
-              </LinearGradient>
+              </View>
             </TouchableOpacity>
           </View>
         )}
@@ -234,13 +364,15 @@ export default function ComponentDetailsModal() {
         {/* If component is already in build, show status message */}
         {from === 'build' && isInBuild && (
           <View style={styles.inBuildStatus}>
-            <LinearGradient
-              colors={['rgba(0, 255, 0, 0.1)', 'rgba(0, 128, 0, 0.05)']}
-              style={styles.inBuildStatusGradient}
-            >
+            <View style={[styles.inBuildStatusContainer, { 
+              backgroundColor: THEME.components.badge.success.backgroundColor,
+              borderColor: THEME.components.badge.success.borderColor
+            }]}>
               <View style={styles.inBuildStatusHeader}>
-                <Ionicons name="checkmark-circle" size={32} color="#00FF00" />
-                <Text style={styles.inBuildStatusTitle}>IN YOUR BUILD</Text>
+                <Ionicons name="checkmark-circle" size={32} color={THEME.components.badge.success.textColor} />
+                <Text style={[styles.inBuildStatusTitle, { color: THEME.components.badge.success.textColor }]}>
+                  IN YOUR BUILD
+                </Text>
               </View>
               
               <Text style={styles.inBuildStatusText}>
@@ -249,16 +381,23 @@ export default function ComponentDetailsModal() {
               
               <View style={styles.inBuildActions}>
                 <TouchableOpacity
-                  style={styles.backToBuildButton}
+                  style={[styles.backToBuildButton, { 
+                    backgroundColor: THEME.components.button.outline.backgroundColor,
+                    borderColor: THEME.components.button.outline.borderColor
+                  }]}
                   onPress={() => router.back()}
                 >
-                  <Text style={styles.backToBuildButtonText}>BACK TO BUILD</Text>
+                  <Text style={[styles.backToBuildButtonText, { color: THEME.components.button.outline.textColor }]}>
+                    BACK TO BUILD
+                  </Text>
                 </TouchableOpacity>
                 
                 <TouchableOpacity
-                  style={styles.changeComponentButton}
+                  style={[styles.changeComponentButton, {
+                    backgroundColor: THEME.components.badge.secondary.backgroundColor,
+                    borderColor: THEME.components.badge.secondary.borderColor
+                  }]}
                   onPress={() => {
-                    // Navigate to component selection
                     router.push({
                       pathname: '/(tabs)/build',
                       params: { 
@@ -268,24 +407,28 @@ export default function ComponentDetailsModal() {
                     });
                   }}
                 >
-                  <Ionicons name="swap-horizontal" size={14} color="#FF00FF" />
-                  <Text style={styles.changeComponentButtonText}>CHANGE</Text>
+                  <Ionicons name="swap-horizontal" size={14} color={THEME.components.badge.secondary.textColor} />
+                  <Text style={[styles.changeComponentButtonText, { color: THEME.components.badge.secondary.textColor }]}>
+                    CHANGE
+                  </Text>
                 </TouchableOpacity>
               </View>
-            </LinearGradient>
+            </View>
           </View>
         )}
 
         {/* If viewing from browse but component is in different slot */}
         {from !== 'build' && isInBuild && (
           <View style={styles.inBuildStatus}>
-            <LinearGradient
-              colors={['rgba(255, 0, 255, 0.1)', 'rgba(148, 0, 211, 0.05)']}
-              style={styles.inBuildStatusGradient}
-            >
+            <View style={[styles.inBuildStatusContainer, { 
+              backgroundColor: THEME.components.badge.info.backgroundColor,
+              borderColor: THEME.components.badge.info.borderColor
+            }]}>
               <View style={styles.inBuildStatusHeader}>
-                <Ionicons name="information-circle" size={32} color="#FF00FF" />
-                <Text style={styles.inBuildStatusTitle}>ALREADY IN BUILD</Text>
+                <Ionicons name="information-circle" size={32} color={THEME.components.badge.info.textColor} />
+                <Text style={[styles.inBuildStatusTitle, { color: THEME.components.badge.info.textColor }]}>
+                  ALREADY IN BUILD
+                </Text>
               </View>
               
               <Text style={styles.inBuildStatusText}>
@@ -293,26 +436,33 @@ export default function ComponentDetailsModal() {
               </Text>
               
               <TouchableOpacity
-                style={styles.viewBuildButton}
+                style={[styles.viewBuildButton, {
+                  backgroundColor: THEME.components.button.outline.backgroundColor,
+                  borderColor: THEME.components.button.outline.borderColor
+                }]}
                 onPress={() => router.push('/(tabs)/build')}
               >
-                <Text style={styles.viewBuildButtonText}>VIEW BUILD</Text>
-                <Ionicons name="arrow-forward" size={14} color="#00FFFF" />
+                <Text style={[styles.viewBuildButtonText, { color: THEME.components.button.outline.textColor }]}>
+                  VIEW BUILD
+                </Text>
+                <Ionicons name="arrow-forward" size={14} color={THEME.components.button.outline.textColor} />
               </TouchableOpacity>
-            </LinearGradient>
+            </View>
           </View>
         )}
 
-        {/* If viewing from browse and can replace */}
+        {/* If viewing from build and can replace */}
         {from === 'build' && !isInBuild && slotType && (
           <View style={styles.replaceSection}>
-            <LinearGradient
-              colors={['rgba(0, 255, 255, 0.1)', 'rgba(0, 139, 139, 0.05)']}
-              style={styles.replaceSectionGradient}
-            >
+            <View style={[styles.replaceSectionContainer, { 
+              backgroundColor: THEME.components.badge.secondary.backgroundColor,
+              borderColor: THEME.components.badge.secondary.borderColor
+            }]}>
               <View style={styles.replaceHeader}>
-                <Ionicons name="swap-horizontal" size={28} color="#00FFFF" />
-                <Text style={styles.replaceTitle}>REPLACE COMPONENT</Text>
+                <Ionicons name="swap-horizontal" size={28} color={THEME.components.badge.secondary.textColor} />
+                <Text style={[styles.replaceTitle, { color: THEME.components.badge.secondary.textColor }]}>
+                  REPLACE COMPONENT
+                </Text>
               </View>
               
               <Text style={styles.replaceText}>
@@ -324,14 +474,14 @@ export default function ComponentDetailsModal() {
                 onPress={handleReplaceInBuild}
               >
                 <LinearGradient
-                  colors={['#00FFFF', '#008B8B']}
+                  colors={THEME.colors.gradients.secondary}
                   style={styles.replaceButtonGradient}
                 >
                   <Ionicons name="refresh" size={18} color="#FFF" />
                   <Text style={styles.replaceButtonText}>REPLACE IN BUILD</Text>
                 </LinearGradient>
               </TouchableOpacity>
-            </LinearGradient>
+            </View>
           </View>
         )}
       </ScrollView>
@@ -342,7 +492,7 @@ export default function ComponentDetailsModal() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0f',
+    backgroundColor: COLORS.background,
   },
   headerGradient: {
     paddingTop: 50,
@@ -351,19 +501,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
   },
   backButton: {
-    padding: spacing.xs,
+    padding: SPACING.xs,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFF',
+    fontSize: THEME.typography.fontSizes.lg,
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.text.primary,
     flex: 1,
     textAlign: 'center',
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: SPACING.sm,
+    letterSpacing: THEME.typography.letterSpacing.tight,
   },
   headerRight: {
     width: 36,
@@ -373,18 +524,17 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     alignItems: 'center',
-    padding: spacing.lg,
+    padding: SPACING.lg,
   },
   imageWrapper: {
     width: SCREEN_WIDTH * 0.6,
     height: SCREEN_WIDTH * 0.6,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.xl,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.md,
   },
   componentImage: {
     width: '100%',
@@ -393,285 +543,373 @@ const styles = StyleSheet.create({
   imagePlaceholder: {
     width: '100%',
     height: '100%',
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.xl,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  imageText: {
-    fontSize: 48,
-    fontWeight: '900',
-    color: 'rgba(255,255,255,0.2)',
+    backgroundColor: COLORS.surfaceLight,
   },
   infoSection: {
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.lg,
   },
   priceStockRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: SPACING.sm,
   },
   price: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#FF00FF',
+    fontSize: THEME.typography.fontSizes['3xl'],
+    fontWeight: THEME.typography.fontWeights.black,
+    color: COLORS.primary,
   },
   stockBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: SPACING.sm,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.full,
+    borderWidth: 1,
   },
   stockDot: {
     width: 6,
     height: 6,
-    borderRadius: 3,
-    marginRight: 6,
+    borderRadius: BORDER_RADIUS.full,
+    marginRight: SPACING.xs,
   },
   stockText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.semibold,
   },
   componentType: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.5)',
-    fontWeight: '600',
-    letterSpacing: 1.5,
-    marginBottom: spacing.sm,
+    fontSize: THEME.typography.fontSizes.xs,
+    color: COLORS.text.tertiary,
+    fontWeight: THEME.typography.fontWeights.semibold,
+    letterSpacing: THEME.typography.letterSpacing.wider,
+    marginBottom: SPACING.sm,
   },
   description: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    lineHeight: 20,
+    fontSize: THEME.typography.fontSizes.md,
+    color: COLORS.text.secondary,
+    lineHeight: THEME.typography.lineHeights.relaxed * THEME.typography.fontSizes.md,
   },
   specsSection: {
-    padding: spacing.md,
-    backgroundColor: 'rgba(255,255,255,0.02)',
-    borderRadius: 16,
-    margin: spacing.md,
+    padding: SPACING.md,
+    backgroundColor: COLORS.surfaceLight,
+    borderRadius: BORDER_RADIUS.lg,
+    margin: SPACING.md,
     marginTop: 0,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   specsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: SPACING.md,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFF',
+    fontSize: THEME.typography.fontSizes.xl,
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.text.primary,
+    letterSpacing: THEME.typography.letterSpacing.tight,
   },
   specsCount: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.4)',
-    fontWeight: '600',
+    fontSize: THEME.typography.fontSizes.xs,
+    color: COLORS.text.tertiary,
+    fontWeight: THEME.typography.fontWeights.semibold,
   },
   specRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 10,
+    paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.04)',
+    borderBottomColor: COLORS.border,
   },
   specKey: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.6)',
+    fontSize: THEME.typography.fontSizes.sm,
+    color: COLORS.text.tertiary,
     flex: 1,
+    fontWeight: THEME.typography.fontWeights.medium,
   },
   specValue: {
-    fontSize: 13,
-    color: '#FFF',
-    fontWeight: '600',
+    fontSize: THEME.typography.fontSizes.sm,
+    color: COLORS.text.primary,
+    fontWeight: THEME.typography.fontWeights.semibold,
     textAlign: 'right',
     flex: 1,
-    paddingLeft: spacing.sm,
+    paddingLeft: SPACING.sm,
   },
+  // Similar Products Section
+  similarSection: {
+    marginBottom: SPACING.lg,
+  },
+  similarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.md,
+  },
+  similarCount: {
+    fontSize: THEME.typography.fontSizes.xs,
+    color: COLORS.text.tertiary,
+    fontWeight: THEME.typography.fontWeights.semibold,
+  },
+  similarProductsList: {
+    marginHorizontal: -SPACING.lg,
+  },
+  similarProductsContent: {
+    paddingHorizontal: SPACING.lg,
+    gap: SPACING.md,
+  },
+  similarProductCard: {
+    width: SIMILAR_PRODUCT_WIDTH,
+    backgroundColor: THEME.components.card.default.backgroundColor,
+    borderRadius: BORDER_RADIUS.md,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.sm,
+  },
+  similarProductInner: {
+    padding: SPACING.sm,
+    height: 200,
+    justifyContent: 'space-between',
+  },
+  similarStockBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 2,
+    borderRadius: BORDER_RADIUS.xs,
+    marginBottom: SPACING.xs,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  similarStockDot: {
+    width: 5,
+    height: 5,
+    borderRadius: BORDER_RADIUS.full,
+    marginRight: 3,
+  },
+  similarStockText: {
+    fontSize: THEME.typography.fontSizes.xs,
+    fontWeight: THEME.typography.fontWeights.semibold,
+  },
+  similarImageContainer: {
+    width: '100%',
+    height: 60,
+    borderRadius: BORDER_RADIUS.sm,
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: SPACING.xs,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  similarProductImage: {
+    width: '80%',
+    height: '80%',
+  },
+  similarImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  similarProductName: {
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.semibold,
+    color: COLORS.text.primary,
+    lineHeight: THEME.typography.lineHeights.tight * THEME.typography.fontSizes.sm,
+    marginBottom: SPACING.xs,
+  },
+  similarProductPrice: {
+    fontSize: THEME.typography.fontSizes.lg,
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.primary,
+    marginBottom: SPACING.xs,
+  },
+  similarProductSpec: {
+    fontSize: THEME.typography.fontSizes.xs,
+    color: COLORS.text.tertiary,
+    fontWeight: THEME.typography.fontWeights.normal,
+  },
+  // Action Buttons
   actionButtons: {
-    padding: spacing.lg,
-    gap: spacing.md,
-    paddingBottom: spacing.xl,
+    padding: SPACING.lg,
+    gap: SPACING.md,
+    paddingBottom: SPACING.xl,
   },
   primaryButton: {
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     overflow: 'hidden',
-    shadowColor: '#FF00FF',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
+    ...SHADOWS.primary,
   },
   buttonGradient: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: SPACING.sm,
   },
   primaryButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    color: COLORS.white,
+    fontSize: THEME.typography.fontSizes.lg,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   secondaryButton: {
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.2)',
+    borderColor: COLORS.border,
   },
-  secondaryButtonGradient: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+  secondaryButtonInner: {
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: SPACING.sm,
+    backgroundColor: THEME.components.button.secondary.backgroundColor,
   },
   secondaryButtonText: {
-    color: '#00FFFF',
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: 0.5,
+    color: COLORS.secondary,
+    fontSize: THEME.typography.fontSizes.md,
+    fontWeight: THEME.typography.fontWeights.semibold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
+  // In Build Status
   inBuildStatus: {
-    padding: spacing.lg,
+    padding: SPACING.lg,
     paddingTop: 0,
   },
-  inBuildStatusGradient: {
-    borderRadius: 12,
-    padding: spacing.md,
+  inBuildStatusContainer: {
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
     borderWidth: 1,
-    borderColor: 'rgba(0, 255, 0, 0.2)',
   },
   inBuildStatusHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
+    gap: SPACING.sm,
+    marginBottom: SPACING.sm,
   },
   inBuildStatusTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#00FF00',
-    letterSpacing: 1,
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   inBuildStatusText: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.8)',
+    fontSize: THEME.typography.fontSizes.sm,
+    color: COLORS.text.secondary,
     textAlign: 'center',
-    marginBottom: spacing.md,
-    lineHeight: 18,
+    marginBottom: SPACING.md,
+    lineHeight: THEME.typography.lineHeights.normal * THEME.typography.fontSizes.sm,
   },
   inBuildActions: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: SPACING.sm,
   },
   backToBuildButton: {
     flex: 2,
-    backgroundColor: 'rgba(255, 0, 255, 0.1)',
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 0, 255, 0.2)',
   },
   backToBuildButtonText: {
-    color: '#FF00FF',
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   changeComponentButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(0, 255, 255, 0.1)',
-    paddingVertical: 10,
-    borderRadius: 8,
-    gap: 4,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+    gap: SPACING.xs,
     borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.2)',
   },
   changeComponentButtonText: {
-    color: '#00FFFF',
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   viewBuildButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 0, 255, 0.1)',
-    paddingVertical: 10,
-    borderRadius: 8,
-    gap: 8,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+    gap: SPACING.sm,
     borderWidth: 1,
-    borderColor: 'rgba(255, 0, 255, 0.2)',
   },
   viewBuildButtonText: {
-    color: '#FF00FF',
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
+  // Replace Section
   replaceSection: {
-    padding: spacing.lg,
+    padding: SPACING.lg,
     paddingTop: 0,
   },
-  replaceSectionGradient: {
-    borderRadius: 12,
-    padding: spacing.md,
+  replaceSectionContainer: {
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
     borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.2)',
   },
   replaceHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
+    gap: SPACING.sm,
+    marginBottom: SPACING.sm,
   },
   replaceTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: '#00FFFF',
-    letterSpacing: 1,
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   replaceText: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.8)',
+    fontSize: THEME.typography.fontSizes.sm,
+    color: COLORS.text.secondary,
     textAlign: 'center',
-    marginBottom: spacing.md,
-    lineHeight: 18,
+    marginBottom: SPACING.md,
+    lineHeight: THEME.typography.lineHeights.normal * THEME.typography.fontSizes.sm,
   },
   replaceButton: {
-    borderRadius: 10,
+    borderRadius: BORDER_RADIUS.md,
     overflow: 'hidden',
+    ...SHADOWS.md,
   },
   replaceButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.md,
-    gap: 8,
+    paddingVertical: SPACING.md,
+    gap: SPACING.sm,
   },
   replaceButtonText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    color: COLORS.white,
+    fontSize: THEME.typography.fontSizes.md,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   errorText: {
-    color: '#FFF',
-    fontSize: 16,
+    color: COLORS.text.primary,
+    fontSize: THEME.typography.fontSizes.lg,
     textAlign: 'center',
     marginTop: 50,
+    fontWeight: THEME.typography.fontWeights.semibold,
   },
 });
