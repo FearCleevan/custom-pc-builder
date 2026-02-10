@@ -151,6 +151,26 @@ export default function ExploreScreen() {
     return 'Unknown Series';
   };
 
+  // Check if product is in compare list
+  const isInCompareList = (productId: string) => {
+    return compareProducts.some(p => p.id === productId);
+  };
+
+  // Toggle product in compare list
+  const toggleCompare = (component: ComponentItem) => {
+    if (isInCompareList(component.id)) {
+      removeFromCompare(component.id);
+      showToastNotification('Removed from compare', 'success');
+    } else {
+      const result = addToCompare(component);
+      if (result.success) {
+        showToastNotification(result.message, 'success');
+      } else {
+        showToastNotification(result.message, 'error');
+      }
+    }
+  };
+
   // Category-specific filter options
   const getCategoryFilters = () => {
     const baseFilters = [
@@ -498,34 +518,6 @@ export default function ExploreScreen() {
     setTimeout(() => {
       setShowToast(false);
     }, 3000);
-  };
-
-  const handleAddToCompare = (component: ComponentItem) => {
-    // Check if we can add this product to compare
-    if (compareProducts.length > 0) {
-      const firstProductType = compareProducts[0].type;
-      
-      if (firstProductType !== component.type) {
-        showToastNotification(
-          `You can only compare ${firstProductType.toUpperCase()} with other ${firstProductType.toUpperCase()} components. Please clear comparison or select a ${firstProductType}.`,
-          'error'
-        );
-        return;
-      }
-    }
-    
-    if (compareProducts.length >= 4) {
-      showToastNotification('Maximum 4 products can be compared at once.', 'error');
-      return;
-    }
-    
-    if (compareProducts.some(p => p.id === component.id)) {
-      showToastNotification('Product already in comparison.', 'error');
-      return;
-    }
-
-    addToCompare(component);
-    showToastNotification(`${component.name} added to comparison.`, 'success');
   };
 
   const handleFilterChange = (filterId: string, value: any) => {
@@ -975,21 +967,23 @@ export default function ExploreScreen() {
                   style={[
                     styles.compareIconButton,
                     {
-                      backgroundColor: compareProducts.some(p => p.id === item.id)
-                        ? COLORS.text.disabled + '20'
+                      backgroundColor: isInCompareList(item.id)
+                        ? THEME.components.badge.primary.backgroundColor + '20'
                         : THEME.components.badge.secondary.backgroundColor,
-                      borderColor: compareProducts.some(p => p.id === item.id)
-                        ? COLORS.text.disabled + '30'
-                        : THEME.components.badge.secondary.borderColor
+                      borderColor: isInCompareList(item.id)
+                        ? THEME.components.badge.primary.borderColor
+                        : THEME.components.badge.secondary.borderColor,
                     }
                   ]}
-                  onPress={() => handleAddToCompare(item)}
-                  disabled={compareProducts.some(p => p.id === item.id)}
+                  onPress={() => toggleCompare(item)}
                 >
                   <Ionicons
-                    name="git-compare"
+                    name={isInCompareList(item.id) ? "checkmark" : "git-compare"}
                     size={14}
-                    color={compareProducts.some(p => p.id === item.id) ? COLORS.text.disabled : THEME.components.badge.secondary.textColor}
+                    color={isInCompareList(item.id)
+                      ? THEME.components.badge.primary.textColor
+                      : THEME.components.badge.secondary.textColor
+                    }
                   />
                 </TouchableOpacity>
 
@@ -1010,6 +1004,7 @@ export default function ExploreScreen() {
                   <Ionicons name="arrow-forward" size={10} color={THEME.components.button.outline.textColor} />
                 </TouchableOpacity>
               </View>
+
             </View>
           </TouchableOpacity>
         )}
@@ -1023,7 +1018,7 @@ export default function ExploreScreen() {
               Try adjusting your filters or search
             </Text>
             <TouchableOpacity
-              style={[styles.resetButton, { 
+              style={[styles.resetButton, {
                 backgroundColor: THEME.components.button.outline.backgroundColor,
                 borderColor: THEME.components.button.outline.borderColor
               }]}
@@ -1520,6 +1515,10 @@ const styles = StyleSheet.create({
     padding: SPACING.xs,
     borderRadius: BORDER_RADIUS.xs,
     borderWidth: 1,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   viewButton: {
     flexDirection: 'row',

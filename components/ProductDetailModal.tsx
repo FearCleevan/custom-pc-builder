@@ -679,7 +679,7 @@ const styles = StyleSheet.create({
   },
   similarProductsSection: {
     paddingHorizontal: SPACING.lg,
-    marginBottom: SPACING.xxl,
+    marginBottom: SPACING.xl,
   },
   similarProductsHeader: {
     flexDirection: 'row',
