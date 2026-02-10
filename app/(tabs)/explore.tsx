@@ -1381,7 +1381,7 @@ const styles = StyleSheet.create({
   grid: {
     paddingTop: HEADER_EXPANDED_HEIGHT + 60,
     padding: SPACING.lg,
-    paddingBottom: SPACING.xxl,
+    paddingBottom: SPACING.xl,
   },
   gridTitle: {
     fontSize: THEME.typography.fontSizes.lg,
@@ -1506,7 +1506,7 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: SPACING.xxl,
+    paddingVertical: SPACING.xl,
     paddingHorizontal: SPACING.xl,
     marginTop: HEADER_EXPANDED_HEIGHT + 50,
   },

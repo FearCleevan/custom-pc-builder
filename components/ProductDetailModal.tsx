@@ -1,4 +1,5 @@
 // ProductDetailModal.tsx
+import { THEME } from '@/theme/indexs';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
@@ -17,11 +18,11 @@ import {
 import { allComponents, ComponentItem } from '@/data/mockData';
 import { useBuildStore } from '@/store/useBuildStore';
 import { useCompareStore } from '@/store/useCompareStore';
-import { spacing } from '@/theme';
 import { ProductType } from '@/types/product';
 
+const { colors: COLORS, spacing: SPACING, borderRadius: BORDER_RADIUS, shadows: SHADOWS } = THEME;
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = (SCREEN_WIDTH - spacing.lg * 3) / 2;
+const CARD_WIDTH = (SCREEN_WIDTH - SPACING.lg * 3) / 2;
 
 interface ProductDetailModalProps {
   visible: boolean;
@@ -66,34 +67,34 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     }, 3000);
   };
 
-const handleAddToBuild = () => {
-  if (!product) return;
+  const handleAddToBuild = () => {
+    if (!product) return;
 
-  // Map your product types to the expected ProductType
-  const typeMap: Record<string, ProductType> = {
-    'cpu': 'cpu',
-    'gpu': 'gpu',
-    'motherboard': 'motherboard',
-    'ram': 'ram',
-    'cooler': 'cooler',
-    'storage': 'storage',
-    'psu': 'psu',
-    'case': 'case',
-    'fan': 'cooler', // If fan should be mapped to cooler
-    'monitor': 'monitor', // Add if monitor is a ProductType
-    'keyboard': 'keyboard', // Add if keyboard is a ProductType
-    'mouse': 'mouse', // Add if mouse is a ProductType
+    // Map your product types to the expected ProductType
+    const typeMap: Record<string, ProductType> = {
+      'cpu': 'cpu',
+      'gpu': 'gpu',
+      'motherboard': 'motherboard',
+      'ram': 'ram',
+      'cooler': 'cooler',
+      'storage': 'storage',
+      'psu': 'psu',
+      'case': 'case',
+      'fan': 'cooler',
+      'monitor': 'monitor',
+      'keyboard': 'keyboard',
+      'mouse': 'mouse',
+    };
+
+    const buildType = typeMap[product.type];
+    
+    if (buildType) {
+      addPart(buildType, product);
+      showToastNotification(`${product.name} has been added to your build.`, 'success');
+    } else {
+      showToastNotification('This component type cannot be added to a PC build.', 'error');
+    }
   };
-
-  const buildType = typeMap[product.type];
-  
-  if (buildType) {
-    addPart(buildType, product);
-    showToastNotification(`${product.name} has been added to your build.`, 'success');
-  } else {
-    showToastNotification('This component type cannot be added to a PC build.', 'error');
-  }
-};
 
   const handleAddToCompare = () => {
     if (!product) return;
@@ -101,18 +102,6 @@ const handleAddToBuild = () => {
     addToCompare(product);
     showToastNotification(`${product.name} has been added to compare.`, 'success');
   };
-
-  // const handleView3D = () => {
-  //   if (product?.has3D) {
-  //     Alert.alert(
-  //       '3D Model',
-  //       '3D model viewer will be available soon.',
-  //       [{ text: 'OK' }]
-  //     );
-  //   } else {
-  //     showToastNotification('This product does not have a 3D model.', 'error');
-  //   }
-  // };
 
   const handleSimilarProductPress = (similarProduct: ComponentItem) => {
     if (onProductChange) {
@@ -140,7 +129,7 @@ const handleAddToBuild = () => {
         <Ionicons 
           name={toastType === 'success' ? "checkmark-circle" : "alert-circle"} 
           size={20} 
-          color="#FFF" 
+          color={COLORS.white} 
         />
         <Text style={styles.toastText}>{toastMessage}</Text>
       </View>
@@ -149,39 +138,56 @@ const handleAddToBuild = () => {
 
   // Product Card Component for Similar Products
   const ProductCard = ({ 
-    product, 
+    product: similarProduct, 
     onPress 
   }: { 
     product: ComponentItem, 
     onPress: (product: ComponentItem) => void 
   }) => {
-    // Check if product has image property
-    const hasImage = product.image && product.image.length > 0;
+    const hasImage = similarProduct.image && similarProduct.image.length > 0;
+    const isInStock = similarProduct.stock === 'In stock';
     
     return (
       <TouchableOpacity
         style={styles.productCard}
-        onPress={() => onPress(product)}
+        onPress={() => onPress(similarProduct)}
         activeOpacity={0.8}
       >
-        <LinearGradient
-          colors={['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)']}
-          style={styles.productCardGradient}
-        >
+        <View style={styles.productCardContainer}>
           {/* Stock Badge */}
-          <View style={styles.productCardStockBadge}>
+          <View style={[
+            styles.productCardStockBadge,
+            {
+              backgroundColor: isInStock
+                ? THEME.components.badge.success.backgroundColor
+                : THEME.components.badge.danger.backgroundColor
+            }
+          ]}>
             <View style={[
               styles.productCardStockDot,
-              { backgroundColor: product.stock === 'In stock' ? '#00FF00' : '#FF0000' }
+              {
+                backgroundColor: isInStock
+                  ? THEME.components.badge.success.textColor
+                  : THEME.components.badge.danger.textColor
+              }
             ]} />
-            <Text style={styles.productCardStockText}>{product.stock}</Text>
+            <Text style={[
+              styles.productCardStockText,
+              {
+                color: isInStock
+                  ? THEME.components.badge.success.textColor
+                  : THEME.components.badge.danger.textColor
+              }
+            ]}>
+              {similarProduct.stock}
+            </Text>
           </View>
 
           {/* Product Image */}
           <View style={styles.productCardImageContainer}>
             {hasImage ? (
               <Image 
-                source={{ uri: product.image }} 
+                source={{ uri: similarProduct.image }} 
                 style={styles.productCardImage}
                 resizeMode="contain"
                 onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
@@ -189,7 +195,7 @@ const handleAddToBuild = () => {
             ) : (
               <View style={styles.productCardImagePlaceholder}>
                 <Text style={styles.productCardImageText}>
-                  {product.type.charAt(0).toUpperCase()}
+                  {similarProduct.type.charAt(0).toUpperCase()}
                 </Text>
               </View>
             )}
@@ -197,12 +203,12 @@ const handleAddToBuild = () => {
 
           {/* Product Name */}
           <Text style={styles.productCardName} numberOfLines={2}>
-            {product.name}
+            {similarProduct.name}
           </Text>
 
           {/* Quick Specs Preview */}
           <View style={styles.productCardSpecs}>
-            {Object.entries(product.specs)
+            {Object.entries(similarProduct.specs)
               .slice(0, 2)
               .map(([key, value], index) => (
                 <Text key={index} style={styles.productCardSpecText} numberOfLines={1}>
@@ -213,16 +219,15 @@ const handleAddToBuild = () => {
 
           {/* Product Price */}
           <Text style={styles.productCardPrice}>
-            ₱{product.price.toLocaleString()}
+            ₱{similarProduct.price.toLocaleString()}
           </Text>
-        </LinearGradient>
+        </View>
       </TouchableOpacity>
     );
   };
 
   // Main Product Image Component
   const ProductMainImage = () => {
-    // Check if main product has image property
     const hasImage = product.image && product.image.length > 0;
     
     return (
@@ -235,14 +240,13 @@ const handleAddToBuild = () => {
             onError={(e) => console.log('Main image load error:', e.nativeEvent.error)}
           />
         ) : (
-          <LinearGradient
-            colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
-            style={styles.imagePlaceholder}
-          >
-            <Text style={styles.imageText}>
-              {product.type.charAt(0).toUpperCase()}
-            </Text>
-          </LinearGradient>
+          <View style={styles.imagePlaceholder}>
+            <Ionicons 
+              name="hardware-chip-outline" 
+              size={64} 
+              color={COLORS.text.tertiary} 
+            />
+          </View>
         )}
       </View>
     );
@@ -263,7 +267,7 @@ const handleAddToBuild = () => {
 
           {/* Header */}
           <LinearGradient
-            colors={['#000000', '#1a1a2e']}
+            colors={THEME.colors.gradients.dark}
             style={styles.header}
           >
             <View style={styles.headerContent}>
@@ -271,7 +275,7 @@ const handleAddToBuild = () => {
                 style={styles.backButton}
                 onPress={handleBackPress}
               >
-                <Ionicons name="arrow-back" size={24} color="#FFF" />
+                <Ionicons name="arrow-back" size={24} color={COLORS.text.primary} />
               </TouchableOpacity>
               
               <Text style={styles.headerTitle} numberOfLines={1}>
@@ -279,10 +283,13 @@ const handleAddToBuild = () => {
               </Text>
               
               <TouchableOpacity 
-                style={styles.headerCompareButton}
+                style={[styles.headerCompareButton, { 
+                  backgroundColor: THEME.components.badge.secondary.backgroundColor,
+                  borderColor: THEME.components.badge.secondary.borderColor
+                }]}
                 onPress={handleAddToCompare}
               >
-                <Ionicons name="git-compare" size={20} color="#00FFFF" />
+                <Ionicons name="git-compare" size={20} color={THEME.components.badge.secondary.textColor} />
               </TouchableOpacity>
             </View>
           </LinearGradient>
@@ -302,15 +309,30 @@ const handleAddToBuild = () => {
                 <Text style={styles.price}>₱{product.price.toLocaleString()}</Text>
                 <View style={[
                   styles.stockBadge,
-                  { backgroundColor: product.stock === 'In stock' ? 'rgba(0, 255, 0, 0.1)' : 'rgba(255, 0, 0, 0.1)' }
+                  { 
+                    backgroundColor: product.stock === 'In stock'
+                      ? THEME.components.badge.success.backgroundColor
+                      : THEME.components.badge.danger.backgroundColor,
+                    borderColor: product.stock === 'In stock'
+                      ? THEME.components.badge.success.borderColor
+                      : THEME.components.badge.danger.borderColor
+                  }
                 ]}>
                   <View style={[
                     styles.stockDot,
-                    { backgroundColor: product.stock === 'In stock' ? '#00FF00' : '#FF0000' }
+                    { 
+                      backgroundColor: product.stock === 'In stock'
+                        ? THEME.components.badge.success.textColor
+                        : THEME.components.badge.danger.textColor
+                    }
                   ]} />
                   <Text style={[
                     styles.stockText,
-                    { color: product.stock === 'In stock' ? '#00FFFF' : '#FF4444' }
+                    { 
+                      color: product.stock === 'In stock'
+                        ? THEME.components.badge.success.textColor
+                        : THEME.components.badge.danger.textColor
+                    }
                   ]}>
                     {product.stock}
                   </Text>
@@ -319,31 +341,10 @@ const handleAddToBuild = () => {
 
               {product.store && (
                 <View style={styles.storeRow}>
-                  <Ionicons name="storefront" size={16} color="#666" />
+                  <Ionicons name="storefront" size={16} color={COLORS.text.tertiary} />
                   <Text style={styles.storeText}>{product.store}</Text>
                 </View>
               )}
-
-              {/* Action Buttons Row */}
-              {/* <View style={styles.actionButtonsRow}>
-                {product.has3D && (
-                  <TouchableOpacity 
-                    style={styles.view3DButton}
-                    onPress={handleView3D}
-                  >
-                    <Ionicons name="cube" size={16} color="#00FFFF" />
-                    <Text style={styles.view3DButtonText}>3D VIEW</Text>
-                  </TouchableOpacity>
-                )}
-                
-                <TouchableOpacity 
-                  style={styles.compareButton}
-                  onPress={handleAddToCompare}
-                >
-                  <Ionicons name="git-compare" size={16} color="#00FFFF" />
-                  <Text style={styles.compareButtonText}>COMPARE</Text>
-                </TouchableOpacity>
-              </View> */}
             </View>
 
             {/* Specifications */}
@@ -375,7 +376,7 @@ const handleAddToBuild = () => {
                     onPress={onClose}
                   >
                     <Text style={styles.viewAllText}>VIEW ALL</Text>
-                    <Ionicons name="arrow-forward" size={12} color="#FF00FF" />
+                    <Ionicons name="arrow-forward" size={12} color={COLORS.primary} />
                   </TouchableOpacity>
                 </View>
                 
@@ -397,22 +398,25 @@ const handleAddToBuild = () => {
           </ScrollView>
 
           {/* Footer Actions */}
-          <LinearGradient
-            colors={['rgba(10, 10, 15, 0.8)', 'rgba(10, 10, 15, 1)']}
-            style={styles.footerGradient}
-          >
+          <View style={styles.footerContainer}>
             <View style={styles.footer}>
               <TouchableOpacity 
                 style={styles.secondaryButton}
                 onPress={handleBackPress}
               >
-                <LinearGradient
-                  colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.05)']}
-                  style={styles.secondaryButtonGradient}
-                >
-                  <Ionicons name="arrow-back" size={20} color="#FFF" />
-                  <Text style={styles.secondaryButtonText}>BACK</Text>
-                </LinearGradient>
+                <View style={[
+                  styles.secondaryButtonInner,
+                  {
+                    backgroundColor: THEME.components.button.secondary.backgroundColor,
+                    borderColor: THEME.components.button.secondary.borderColor
+                  }
+                ]}>
+                  <Ionicons name="arrow-back" size={20} color={THEME.components.button.secondary.textColor} />
+                  <Text style={[
+                    styles.secondaryButtonText,
+                    { color: THEME.components.button.secondary.textColor }
+                  ]}>BACK</Text>
+                </View>
               </TouchableOpacity>
               
               <TouchableOpacity 
@@ -420,15 +424,15 @@ const handleAddToBuild = () => {
                 onPress={handleAddToBuild}
               >
                 <LinearGradient
-                  colors={['#FF00FF', '#9400D3']}
+                  colors={THEME.colors.gradients.primary}
                   style={styles.primaryButtonGradient}
                 >
-                  <Ionicons name="add-circle" size={24} color="#FFF" />
+                  <Ionicons name="add-circle" size={24} color={COLORS.white} />
                   <Text style={styles.primaryButtonText}>ADD TO BUILD</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
-          </LinearGradient>
+          </View>
         </View>
       </View>
     </Modal>
@@ -438,53 +442,49 @@ const handleAddToBuild = () => {
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    backgroundColor: COLORS.overlay,
   },
   modalContent: {
     flex: 1,
-    backgroundColor: '#0a0a0f',
+    backgroundColor: COLORS.background,
     marginTop: 40,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    borderTopLeftRadius: BORDER_RADIUS.xl,
+    borderTopRightRadius: BORDER_RADIUS.xl,
     overflow: 'hidden',
   },
   toastContainer: {
     position: 'absolute',
     top: 100,
-    left: 20,
-    right: 20,
+    left: SPACING.lg,
+    right: SPACING.lg,
     zIndex: 1000,
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.md,
-    borderRadius: 12,
-    gap: spacing.sm,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    gap: SPACING.sm,
+    ...SHADOWS.md,
   },
   toastSuccess: {
-    backgroundColor: 'rgba(0, 255, 0, 0.2)',
+    backgroundColor: THEME.components.badge.success.backgroundColor,
     borderWidth: 1,
-    borderColor: 'rgba(0, 255, 0, 0.3)',
+    borderColor: THEME.components.badge.success.borderColor,
   },
   toastError: {
-    backgroundColor: 'rgba(255, 0, 0, 0.2)',
+    backgroundColor: THEME.components.badge.danger.backgroundColor,
     borderWidth: 1,
-    borderColor: 'rgba(255, 0, 0, 0.3)',
+    borderColor: THEME.components.badge.danger.borderColor,
   },
   toastText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
+    color: COLORS.white,
+    fontSize: THEME.typography.fontSizes.md,
+    fontWeight: THEME.typography.fontWeights.semibold,
     flex: 1,
   },
   header: {
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.md,
-    paddingHorizontal: spacing.lg,
+    paddingTop: SPACING.xl,
+    paddingBottom: SPACING.md,
+    paddingHorizontal: SPACING.lg,
   },
   headerContent: {
     flexDirection: 'row',
@@ -492,27 +492,27 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   backButton: {
-    padding: spacing.sm,
+    padding: SPACING.sm,
   },
   headerTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#FFF',
-    letterSpacing: 2,
+    fontSize: THEME.typography.fontSizes.lg,
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.text.primary,
+    letterSpacing: THEME.typography.letterSpacing.wide,
     flex: 1,
     textAlign: 'center',
   },
   headerCompareButton: {
-    padding: spacing.sm,
-    backgroundColor: 'rgba(0, 255, 255, 0.1)',
-    borderRadius: 8,
+    padding: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+    borderWidth: 1,
   },
   scrollContent: {
     flex: 1,
   },
   imageContainer: {
     alignItems: 'center',
-    padding: spacing.xl,
+    padding: SPACING.xl,
     height: SCREEN_WIDTH * 0.7,
     justifyContent: 'center',
   },
@@ -521,227 +521,197 @@ const styles = StyleSheet.create({
     height: '100%',
     maxWidth: SCREEN_WIDTH * 0.7,
     maxHeight: SCREEN_WIDTH * 0.7,
-    borderRadius: 20,
+    borderRadius: BORDER_RADIUS.xl,
   },
   imagePlaceholder: {
     width: SCREEN_WIDTH * 0.7,
     height: SCREEN_WIDTH * 0.7,
-    borderRadius: 20,
+    borderRadius: BORDER_RADIUS.xl,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  imageText: {
-    fontSize: 64,
-    fontWeight: '900',
-    color: 'rgba(255,255,255,0.3)',
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   infoSection: {
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.xl,
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.xl,
   },
   productName: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#FFF',
-    marginBottom: spacing.md,
-    lineHeight: 28,
+    fontSize: THEME.typography.fontSizes['2xl'],
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.text.primary,
+    marginBottom: SPACING.md,
+    lineHeight: THEME.typography.lineHeights.tight * THEME.typography.fontSizes['2xl'],
   },
   priceStockRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: SPACING.md,
   },
   price: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#FF00FF',
+    fontSize: THEME.typography.fontSizes['3xl'],
+    fontWeight: THEME.typography.fontWeights.black,
+    color: COLORS.primary,
   },
   stockBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 20,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.full,
+    borderWidth: 1,
   },
   stockDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginRight: spacing.xs,
+    marginRight: SPACING.xs,
   },
   stockText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.semibold,
   },
   storeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.lg,
-    gap: spacing.sm,
+    marginBottom: SPACING.lg,
+    gap: SPACING.sm,
   },
   storeText: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.6)',
-  },
-  actionButtonsRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  view3DButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 255, 255, 0.1)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 8,
-    gap: spacing.xs,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.2)',
-  },
-  view3DButtonText: {
-    fontSize: 12,
-    color: '#00FFFF',
-    fontWeight: '600',
-    letterSpacing: 1,
-  },
-  compareButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 255, 255, 0.1)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 8,
-    gap: spacing.xs,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 255, 255, 0.2)',
-  },
-  compareButtonText: {
-    fontSize: 12,
-    color: '#00FFFF',
-    fontWeight: '600',
-    letterSpacing: 1,
+    fontSize: THEME.typography.fontSizes.md,
+    color: COLORS.text.secondary,
+    fontWeight: THEME.typography.fontWeights.normal,
   },
   specsSection: {
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.xl,
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.xl,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#FFF',
-    marginBottom: spacing.lg,
-    letterSpacing: 2,
+    fontSize: THEME.typography.fontSizes.lg,
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.text.primary,
+    marginBottom: SPACING.lg,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   specsContainer: {
-    backgroundColor: 'rgba(255,255,255,0.02)',
-    borderRadius: 16,
-    padding: spacing.lg,
+    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: COLORS.border,
+    ...SHADOWS.sm,
   },
   specRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.sm,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: COLORS.border,
   },
   specRowAlt: {
-    backgroundColor: 'rgba(255,255,255,0.02)',
+    backgroundColor: COLORS.surfaceLight,
   },
   specKey: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
+    fontSize: THEME.typography.fontSizes.md,
+    color: COLORS.text.secondary,
     flex: 1,
+    fontWeight: THEME.typography.fontWeights.medium,
   },
   specValue: {
-    fontSize: 14,
-    color: '#FFF',
-    fontWeight: '600',
+    fontSize: THEME.typography.fontSizes.md,
+    color: COLORS.text.primary,
+    fontWeight: THEME.typography.fontWeights.semibold,
     flex: 1,
     textAlign: 'right',
   },
-  footerGradient: {
-    paddingTop: spacing.md,
+  footerContainer: {
+    paddingTop: SPACING.md,
+    backgroundColor: COLORS.background,
   },
   footer: {
     flexDirection: 'row',
-    padding: spacing.lg,
-    gap: spacing.md,
-    paddingBottom: spacing.xl,
+    padding: SPACING.lg,
+    gap: SPACING.md,
+    paddingBottom: SPACING.xl,
   },
   primaryButton: {
     flex: 2,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     overflow: 'hidden',
+    ...SHADOWS.primary,
   },
   primaryButtonGradient: {
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.xl,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
+    gap: SPACING.sm,
   },
   primaryButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: 1,
+    color: COLORS.white,
+    fontSize: THEME.typography.fontSizes.lg,
+    fontWeight: THEME.typography.fontWeights.bold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   secondaryButton: {
     flex: 1,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  secondaryButtonGradient: {
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.xl,
+  secondaryButtonInner: {
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
+    gap: SPACING.sm,
   },
   secondaryButtonText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: 1,
+    fontSize: THEME.typography.fontSizes.md,
+    fontWeight: THEME.typography.fontWeights.semibold,
+    letterSpacing: THEME.typography.letterSpacing.wide,
   },
   similarProductsSection: {
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.xxl,
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.xxl,
   },
   similarProductsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: SPACING.lg,
   },
   viewAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: SPACING.xs,
   },
   viewAllText: {
-    fontSize: 12,
-    color: '#FF00FF',
-    fontWeight: '600',
+    fontSize: THEME.typography.fontSizes.sm,
+    color: COLORS.primary,
+    fontWeight: THEME.typography.fontWeights.semibold,
   },
   similarProductsList: {
-    gap: spacing.md,
-    paddingRight: spacing.lg,
+    gap: SPACING.md,
+    paddingRight: SPACING.lg,
   },
   productCard: {
     width: CARD_WIDTH,
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     overflow: 'hidden',
-    marginRight: spacing.md,
+    backgroundColor: THEME.components.card.default.backgroundColor,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.sm,
   },
-  productCardGradient: {
-    padding: spacing.sm,
+  productCardContainer: {
+    padding: SPACING.sm,
     height: 200,
     justifyContent: 'space-between',
   },
@@ -749,11 +719,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    paddingHorizontal: spacing.xs,
+    paddingHorizontal: SPACING.xs,
     paddingVertical: 2,
-    borderRadius: 4,
-    marginBottom: spacing.xs,
+    borderRadius: BORDER_RADIUS.xs,
+    marginBottom: SPACING.xs,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   productCardStockDot: {
     width: 5,
@@ -762,19 +733,20 @@ const styles = StyleSheet.create({
     marginRight: 3,
   },
   productCardStockText: {
-    fontSize: 8,
-    color: '#FFF',
-    fontWeight: '600',
+    fontSize: THEME.typography.fontSizes.xs,
+    fontWeight: THEME.typography.fontWeights.semibold,
   },
   productCardImageContainer: {
     width: '100%',
     height: 50,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: BORDER_RADIUS.sm,
+    backgroundColor: COLORS.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: SPACING.xs,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   productCardImage: {
     width: '100%',
@@ -787,29 +759,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   productCardImageText: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: 'rgba(255,255,255,0.2)',
+    fontSize: THEME.typography.fontSizes.xl,
+    fontWeight: THEME.typography.fontWeights.black,
+    color: COLORS.text.tertiary,
   },
   productCardName: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFF',
-    lineHeight: 14,
-    marginBottom: spacing.xs,
+    fontSize: THEME.typography.fontSizes.sm,
+    fontWeight: THEME.typography.fontWeights.semibold,
+    color: COLORS.text.primary,
+    lineHeight: THEME.typography.lineHeights.tight * THEME.typography.fontSizes.sm,
+    marginBottom: SPACING.xs,
     flex: 1,
   },
   productCardSpecs: {
-    marginBottom: spacing.xs,
+    marginBottom: SPACING.xs,
     gap: 1,
   },
   productCardSpecText: {
-    fontSize: 9,
-    color: 'rgba(255,255,255,0.5)',
+    fontSize: THEME.typography.fontSizes.xs,
+    color: COLORS.text.tertiary,
+    fontWeight: THEME.typography.fontWeights.normal,
   },
   productCardPrice: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: '#FF00FF',
+    fontSize: THEME.typography.fontSizes.md,
+    fontWeight: THEME.typography.fontWeights.bold,
+    color: COLORS.primary,
   },
 });
